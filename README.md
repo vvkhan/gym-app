@@ -2,58 +2,59 @@
 
 ## Part 1: Spring Core CRM System
 
-### Objects Schema
+### Requirements Note
 
-**1. User (Base entity)**
-- First Name
-- Last Name
-- Username
-- Password
-- IsActive
+**1. Three service classes implemented:**
+- Trainee Service (create/update/delete/select), 
+- Trainer Service (create/update/select), 
+- Training Service (create/select)
 
-**2. Trainer (extends User)**
-- Specialization
-- UserId
-- Relationship: 0..1 to Training Type
+Service layer implements Template Method design pattern (https://refactoring.guru/design-patterns/template-method). `AbstractService` class is extended with concrete classes `TraineeService`, `TrainerService`, and `TrainingService`.
 
-**3. Trainee (extends User)**
-- Date of Birth
-- Address
-- UserId
-- Relationship: 0..1 to Training
+**2. Application context configured with Spring annotation and Java based approach:**
+- Java-based configuration (`@Configuration` classes with `@Bean` methods):
+  - `AppConfig`
+  - `StorageConfig`
+- Annotation-based configuration:
+  - `@Repository` - DAO implementations
+  - `@Service` - service layer concrete classes
+  - `@Component` - facade, util, storage classes
 
-**4. Training Type**
-- Training Type Name
-- Relationship: 1 to many Trainers
+**3. DAO objects for each domain model entities implemented. They store in and retrieve data from common in-memory storage (Java `Map`). Each entity stored under separate namespace.**
 
-**5. Training**
-- Trainee Id
-- Trainer Id
-- Training Name
-- Training Type
-- Training Date
-- Training Duration
-- Relationships: Many-to-1 with Trainee, Many-to-1 with Trainer
+Check DAO classes.
 
-### Requirements
+**4. Storage implemented as separate Spring bean:** 
+- Initialized with data from   `.json` file - `/resource/data/initial-data.json` (`Jackson` used for work with `.json`)
+- Path to the file set using property placeholder and external property file - check `PropertySourcesPlaceholderConfigurer` bean (`AppConfig`) for use of `@Value` placeholder in `StorageInitializer` class (references to `storage.data.file.path` in `application.properties')
+- Every storage implemented as separate Spring bean - check `SotrageConfig`
 
-#### Service Layer
+**5. Injections:**
+- DAO with storage bean inserted into services beans using auto wiring - check DAO classes receiving storage beans via `@Autowired` constructor with `@Qualifier`
+- Services beans injected into the facade using constructor-based injections - check facade class receiving services via `@Autowired` constructor
+- The rest of the injections done in a setter-based way - check the rest injections in DAOs and util classes
 
-- TraineeService: Create/Update/Delete/Select Trainee profiles
-- TrainerService: Create/Update/Select Trainer profiles
-- TrainingService: Create/Select Training profiles
+**6. Unit Tests:**
 
-#### Technical Implementation
+`Jacoco` is utilized for evaluating tests coverage.
+- `util` - 100% coverage
+- `dao/impl` - 100% coverage
+- `service` - 84%
+- `service/impl` - 89%
+- `storage` - 94%
 
-1. Spring configuration via annotations or Java-based approach
-2. DAO layer for each entity using in-memory storage (java.util.Map)
-3. Separate storage beans with data initialization from file using bean post-processing
-4. Dependency injection: Auto-wiring for DAOs, constructor injection for facade, setter injection
-   for the rest
-5. Unit test coverage required
-6. Proper logging implementation
-7. Username/Password generation logic:
-   - Username: FirstName.LastName (e.g., John.Smith)
-   - If duplicate: append serial number (John.Smith1, John.Smith2)
-   - Password: Random 10-character string
+Unit tests for `model` classes were not implemented since project Lombok was utilised for those classes and creating unit tests here would be redundant testing of Lombok work.
+Unit tests for `exception` classes were not implemented since there's no logic, just creation of custom extensions.
+Unit tests for `facade` class were not implemented since it does not add business logic (as per my understanding, `facade` is required only for practicing injection via constructor).
 
+**7. Logging:**
+
+- Implemented with `Logback` and `SLF4J`
+- Logging layers set up in `/resources/logback.xml` with writing logs into files
+- No sensitive data is included into logs (logs include only generated password's length and exclude; `@ToString.Exclude` used on the password field in User to suppress it from all Lombok-generated
+  `toString()` calls)
+
+**8. Username and Password calculation:**
+
+- Check `util/UsernameGeneratorImpl` (implements the relevant interface) - calculates Username by concatenation of first and last name with dot as a separator (adds serial number when necessary)
+- Check `util/PasswordGeneratorImpl` (implements the relevant interface) - generates Password as a random 10 chars lenth string
