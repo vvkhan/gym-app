@@ -1,6 +1,6 @@
 package com.epam.gym.core.dao.impl;
 
-import com.epam.gym.core.exception.EntityNotFoundException;
+import java.util.NoSuchElementException;
 import com.epam.gym.core.model.Trainer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -20,7 +20,8 @@ class TrainerDaoImplTest {
     @BeforeEach
     void setUp() {
         storage = new HashMap<>();
-        trainerDao = new TrainerDaoImpl(storage);
+        trainerDao = new TrainerDaoImpl();
+        trainerDao.setStorage(storage);
     }
 
     @Test
@@ -74,6 +75,11 @@ class TrainerDaoImplTest {
     }
 
     @Test
+    void findById_ThrowExceptionWhenIdIsNull() {
+        assertThrows(IllegalArgumentException.class, () -> trainerDao.findById(null));
+    }
+
+    @Test
     void findByUsername_ReturnTrainerWhenExists() {
         Trainer trainer = new Trainer();
         trainer.setId(1L);
@@ -91,6 +97,11 @@ class TrainerDaoImplTest {
         Optional<Trainer> found = trainerDao.findByUsername("nonexistent");
 
         assertFalse(found.isPresent());
+    }
+
+    @Test
+    void findByUsername_ThrowExceptionWhenUsernameIsNull() {
+        assertThrows(IllegalArgumentException.class, () -> trainerDao.findByUsername(null));
     }
 
     @Test
@@ -138,6 +149,6 @@ class TrainerDaoImplTest {
         trainer.setId(999L);
         trainer.setFirstName("John");
 
-        assertThrows(EntityNotFoundException.class, () -> trainerDao.update(trainer));
+        assertThrows(NoSuchElementException.class, () -> trainerDao.update(trainer));
     }
 }

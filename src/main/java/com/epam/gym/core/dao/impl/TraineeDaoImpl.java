@@ -1,89 +1,110 @@
 package com.epam.gym.core.dao.impl;
 
 import com.epam.gym.core.dao.TraineeDao;
-import com.epam.gym.core.exception.EntityNotFoundException;
+import java.util.NoSuchElementException;
 import com.epam.gym.core.model.Trainee;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Repository;
 
-import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Repository
+@DependsOn("traineeDataLoader")
 public class TraineeDaoImpl implements TraineeDao {
 
-    private static final Logger log = LoggerFactory.getLogger(TraineeDaoImpl.class);
-
-    private final Map<Long, Trainee> storage;
+    private Map<Long, Trainee> storage;
     private long currentId = 1;
 
     @Autowired
-    public TraineeDaoImpl(@Qualifier("traineeStorage") Map<Long, Trainee> storage) {
+    public void setStorage(@Qualifier("traineeStorage") Map<Long, Trainee> storage) {
         this.storage = storage;
+    }
+
+    @PostConstruct
+    public void initCurrentId() {
+        if (!storage.isEmpty()) {
+            currentId = Collections.max(storage.keySet()) + 1;
+        }
     }
 
     @Override
     public Trainee create(Trainee trainee) {
-        log.debug("Creating trainee: {}", trainee);
-
         Long id = currentId++;
-        trainee.setId(id);
-        storage.put(id, trainee);
-
-        log.info("Created trainee with id: {}", id);
-        return trainee;
+        Trainee stored = Trainee.builder()
+                .id(id)
+                .firstName(trainee.getFirstName())
+                .lastName(trainee.getLastName())
+                .username(trainee.getUsername())
+                .password(trainee.getPassword())
+                .isActive(trainee.getIsActive())
+                .dateOfBirth(trainee.getDateOfBirth())
+                .address(trainee.getAddress())
+                .build();
+        storage.put(id, stored);
+        return copy(stored);
     }
 
     @Override
     public Optional<Trainee> findById(Long id) {
-        log.debug("Finding trainee by id: {}", id);
-        return Optional.ofNullable(storage.get(id));
+        if (id == null) {
+            throw new IllegalArgumentException("Id must not be null");
+        }
+        return Optional.ofNullable(storage.get(id)).map(this::copy);
     }
 
     @Override
     public Optional<Trainee> findByUsername(String username) {
-        log.debug("Finding trainee by username: {}", username);
-
+        if (username == null) {
+            throw new IllegalArgumentException("Username must not be null");
+        }
         return storage.values().stream()
                 .filter(trainee -> username.equals(trainee.getUsername()))
-                .findFirst();
+                .findFirst()
+                .map(this::copy);
     }
 
     @Override
     public List<Trainee> findAll() {
-        log.debug("Finding all trainees");
-        return new ArrayList<>(storage.values());
+        return storage.values().stream()
+                .map(this::copy)
+                .collect(Collectors.toList());
     }
 
     @Override
     public Trainee update(Trainee trainee) {
-        log.debug("Updating trainee: {}", trainee);
-
         if (trainee.getId() == null || !storage.containsKey(trainee.getId())) {
-            log.error("Trainee not found for update: {}", trainee.getId());
-            throw new EntityNotFoundException("Trainee", trainee.getId());
+            throw new NoSuchElementException("Trainee with id " + trainee.getId() + " not found");
         }
-
-        storage.put(trainee.getId(), trainee);
-        log.info("Updated trainee with id: {}", trainee.getId());
-        return trainee;
+        Trainee stored = copy(trainee);
+        storage.put(stored.getId(), stored);
+        return copy(stored);
     }
 
     @Override
     public void delete(Long id) {
-        log.debug("Deleting trainee with id: {}", id);
-
-        if (!storage.containsKey(id)) {
-            log.error("Trainee not found for delete: {}", id);
-            throw new EntityNotFoundException("Trainee", id);
+        Trainee removed = storage.remove(id);
+        if (removed == null) {
+            throw new NoSuchElementException("Trainee with id " + id + " not found");
         }
+    }
 
-        storage.remove(id);
-        log.info("Deleted trainee with id: {}", id);
+    private Trainee copy(Trainee t) {
+        return Trainee.builder()
+                .id(t.getId())
+                .firstName(t.getFirstName())
+                .lastName(t.getLastName())
+                .username(t.getUsername())
+                .password(t.getPassword())
+                .isActive(t.getIsActive())
+                .dateOfBirth(t.getDateOfBirth())
+                .address(t.getAddress())
+                .build();
     }
 }

@@ -29,6 +29,7 @@ bin/
 # OS Files
 .DS_Store
 Thumbs.db
+desktop.ini
 
 # Logs
 *.log

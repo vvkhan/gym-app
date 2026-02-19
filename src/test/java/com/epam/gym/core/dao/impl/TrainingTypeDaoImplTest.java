@@ -19,7 +19,8 @@ class TrainingTypeDaoImplTest {
     @BeforeEach
     void setUp() {
         storage = new HashMap<>();
-        trainingTypeDao = new TrainingTypeDaoImpl(storage);
+        trainingTypeDao = new TrainingTypeDaoImpl();
+        trainingTypeDao.setStorage(storage);
     }
 
     @Test
@@ -72,6 +73,11 @@ class TrainingTypeDaoImplTest {
     }
 
     @Test
+    void findById_ThrowExceptionWhenIdIsNull() {
+        assertThrows(IllegalArgumentException.class, () -> trainingTypeDao.findById(null));
+    }
+
+    @Test
     void findByName_ReturnTrainingTypeWhenExists() {
         TrainingType trainingType = new TrainingType();
         trainingType.setId(1L);
@@ -89,6 +95,11 @@ class TrainingTypeDaoImplTest {
         Optional<TrainingType> found = trainingTypeDao.findByName("NonExistent");
 
         assertFalse(found.isPresent());
+    }
+
+    @Test
+    void findByName_ThrowExceptionWhenNameIsNull() {
+        assertThrows(IllegalArgumentException.class, () -> trainingTypeDao.findByName(null));
     }
 
     @Test
