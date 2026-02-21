@@ -1,15 +1,15 @@
-package com.epam.gym.core.service.impl;
+package com.epam.gym.core.service;
 
 import com.epam.gym.core.dao.TrainerDao;
 import com.epam.gym.core.dao.TrainingTypeDao;
-import com.epam.gym.core.exception.EntityNotFoundException;
+import java.util.NoSuchElementException;
 import com.epam.gym.core.model.Trainer;
 import com.epam.gym.core.model.TrainingType;
 import com.epam.gym.core.util.PasswordGenerator;
 import com.epam.gym.core.util.UsernameGenerator;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -36,16 +36,8 @@ class TrainerServiceTest {
     @Mock
     private PasswordGenerator passwordGenerator;
 
+    @InjectMocks
     private TrainerService trainerService;
-
-    @BeforeEach
-    void setUp() {
-        trainerService = new TrainerService();
-        trainerService.setTrainerDao(trainerDao);
-        trainerService.setTrainingTypeDao(trainingTypeDao);
-        trainerService.setUsernameGenerator(usernameGenerator);
-        trainerService.setPasswordGenerator(passwordGenerator);
-    }
 
     @Test
     void createTrainer_GenerateCredentialsAndCreateTrainer() {
@@ -92,7 +84,7 @@ class TrainerServiceTest {
         Long trainingTypeId = 999L;
         when(trainingTypeDao.findById(trainingTypeId)).thenReturn(Optional.empty());
 
-        assertThrows(EntityNotFoundException.class, () ->
+        assertThrows(NoSuchElementException.class, () ->
                 trainerService.createTrainer("John", "Doe", trainingTypeId)
         );
 
@@ -154,7 +146,7 @@ class TrainerServiceTest {
         when(trainingTypeDao.findById(trainingTypeId)).thenReturn(Optional.of(trainingType));
         when(trainerDao.findById(id)).thenReturn(Optional.empty());
 
-        assertThrows(EntityNotFoundException.class, () ->
+        assertThrows(NoSuchElementException.class, () ->
                 trainerService.updateTrainer(id, "John", "Doe", trainingTypeId, true)
         );
 
@@ -170,7 +162,7 @@ class TrainerServiceTest {
 
         when(trainingTypeDao.findById(trainingTypeId)).thenReturn(Optional.empty());
 
-        assertThrows(EntityNotFoundException.class, () ->
+        assertThrows(NoSuchElementException.class, () ->
                 trainerService.updateTrainer(id, "John", "Doe", trainingTypeId, true)
         );
 
@@ -180,15 +172,40 @@ class TrainerServiceTest {
     }
 
     @Test
+    void updateTrainer_ThrowExceptionWhenIdIsNull() {
+        assertThrows(IllegalArgumentException.class, () ->
+                trainerService.updateTrainer(null, "John", "Doe", 1L, true)
+        );
+        verify(trainerDao, never()).findById(any());
+        verify(trainerDao, never()).update(any());
+    }
+
+    @Test
     void getTrainerById_DelegatesToDao() {
         trainerService.getTrainerById(1L);
         verify(trainerDao).findById(1L);
     }
 
     @Test
+    void getTrainerById_ReturnEmptyWhenIdIsNull() {
+        Optional<Trainer> result = trainerService.getTrainerById(null);
+
+        assertFalse(result.isPresent());
+        verify(trainerDao, never()).findById(any());
+    }
+
+    @Test
     void getTrainerByUsername_DelegatesToDao() {
         trainerService.getTrainerByUsername("John.Doe");
         verify(trainerDao).findByUsername("John.Doe");
+    }
+
+    @Test
+    void getTrainerByUsername_ReturnEmptyWhenUsernameIsNull() {
+        Optional<Trainer> result = trainerService.getTrainerByUsername(null);
+
+        assertFalse(result.isPresent());
+        verify(trainerDao, never()).findByUsername(any());
     }
 
     @Test

@@ -1,16 +1,16 @@
 package com.epam.gym.core.model;
 
-import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
+import lombok.experimental.SuperBuilder;
 
 /**
  * Abstract class for all users types
  */
 @Data
 @NoArgsConstructor
-@AllArgsConstructor
+@SuperBuilder
 public abstract class User {
 
     private Long id;

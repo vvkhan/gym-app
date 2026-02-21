@@ -1,13 +1,13 @@
-package com.epam.gym.core.service.impl;
+package com.epam.gym.core.service;
 
 import com.epam.gym.core.dao.TraineeDao;
-import com.epam.gym.core.exception.EntityNotFoundException;
+import java.util.NoSuchElementException;
 import com.epam.gym.core.model.Trainee;
 import com.epam.gym.core.util.PasswordGenerator;
 import com.epam.gym.core.util.UsernameGenerator;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -33,15 +33,8 @@ class TraineeServiceTest {
     @Mock
     private PasswordGenerator passwordGenerator;
 
+    @InjectMocks
     private TraineeService traineeService;
-
-    @BeforeEach
-    void setUp() {
-        traineeService = new TraineeService();
-        traineeService.setTraineeDao(traineeDao);
-        traineeService.setUsernameGenerator(usernameGenerator);
-        traineeService.setPasswordGenerator(passwordGenerator);
-    }
 
     @Test
     void createTrainee_GenerateCredentialsAndCreateTrainee() {
@@ -125,7 +118,7 @@ class TraineeServiceTest {
         Long id = 999L;
         when(traineeDao.findById(id)).thenReturn(Optional.empty());
 
-        assertThrows(EntityNotFoundException.class, () ->
+        assertThrows(NoSuchElementException.class, () ->
                 traineeService.updateTrainee(id, "John", "Doe", LocalDate.now(), "Address", true)
         );
 
@@ -144,15 +137,46 @@ class TraineeServiceTest {
     }
 
     @Test
+    void deleteTrainee_ThrowExceptionWhenIdIsNull() {
+        assertThrows(IllegalArgumentException.class, () -> traineeService.deleteTrainee(null));
+        verify(traineeDao, never()).delete(any());
+    }
+
+    @Test
+    void updateTrainee_ThrowExceptionWhenIdIsNull() {
+        assertThrows(IllegalArgumentException.class, () ->
+                traineeService.updateTrainee(null, "John", "Doe", LocalDate.now(), "Address", true)
+        );
+        verify(traineeDao, never()).findById(any());
+        verify(traineeDao, never()).update(any());
+    }
+
+    @Test
     void getTraineeById_DelegatesToDao() {
         traineeService.getTraineeById(1L);
         verify(traineeDao).findById(1L);
     }
 
     @Test
+    void getTraineeById_ReturnEmptyWhenIdIsNull() {
+        Optional<Trainee> result = traineeService.getTraineeById(null);
+
+        assertFalse(result.isPresent());
+        verify(traineeDao, never()).findById(any());
+    }
+
+    @Test
     void getTraineeByUsername_DelegatesToDao() {
         traineeService.getTraineeByUsername("John.Doe");
         verify(traineeDao).findByUsername("John.Doe");
+    }
+
+    @Test
+    void getTraineeByUsername_ReturnEmptyWhenUsernameIsNull() {
+        Optional<Trainee> result = traineeService.getTraineeByUsername(null);
+
+        assertFalse(result.isPresent());
+        verify(traineeDao, never()).findByUsername(any());
     }
 
     @Test

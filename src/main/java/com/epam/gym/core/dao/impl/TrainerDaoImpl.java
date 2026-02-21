@@ -1,76 +1,106 @@
 package com.epam.gym.core.dao.impl;
 
 import com.epam.gym.core.dao.TrainerDao;
-import com.epam.gym.core.exception.EntityNotFoundException;
+import java.util.NoSuchElementException;
 import com.epam.gym.core.model.Trainer;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.epam.gym.core.model.TrainingType;
+import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Repository;
 
-import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Repository
+@DependsOn("trainerDataLoader")
 public class TrainerDaoImpl implements TrainerDao {
 
-    private static final Logger log = LoggerFactory.getLogger(TrainerDaoImpl.class);
-
-    private final Map<Long, Trainer> storage;
+    private Map<Long, Trainer> storage;
     private long currentId = 1;
 
     @Autowired
-    public TrainerDaoImpl(@Qualifier("trainerStorage") Map<Long, Trainer> storage) {
+    public void setStorage(@Qualifier("trainerStorage") Map<Long, Trainer> storage) {
         this.storage = storage;
+    }
+
+    @PostConstruct
+    public void initCurrentId() {
+        if (!storage.isEmpty()) {
+            currentId = Collections.max(storage.keySet()) + 1;
+        }
     }
 
     @Override
     public Trainer create(Trainer trainer) {
-        log.debug("Creating trainer: {}", trainer);
-
         Long id = currentId++;
-        trainer.setId(id);
-        storage.put(id, trainer);
-
-        log.info("Created trainer with id: {}", id);
-        return trainer;
+        Trainer stored = Trainer.builder()
+                .id(id)
+                .firstName(trainer.getFirstName())
+                .lastName(trainer.getLastName())
+                .username(trainer.getUsername())
+                .password(trainer.getPassword())
+                .isActive(trainer.getIsActive())
+                .specialization(copyTrainingType(trainer.getSpecialization()))
+                .build();
+        storage.put(id, stored);
+        return copy(stored);
     }
 
     @Override
     public Optional<Trainer> findById(Long id) {
-        log.debug("Finding trainer by id: {}", id);
-        return Optional.ofNullable(storage.get(id));
+        if (id == null) {
+            throw new IllegalArgumentException("Id must not be null");
+        }
+        return Optional.ofNullable(storage.get(id)).map(this::copy);
     }
 
     @Override
     public Optional<Trainer> findByUsername(String username) {
-        log.debug("Finding trainer by username: {}", username);
-
+        if (username == null) {
+            throw new IllegalArgumentException("Username must not be null");
+        }
         return storage.values().stream()
                 .filter(trainer -> username.equals(trainer.getUsername()))
-                .findFirst();
+                .findFirst()
+                .map(this::copy);
     }
 
     @Override
     public List<Trainer> findAll() {
-        log.debug("Finding all trainers");
-        return new ArrayList<>(storage.values());
+        return storage.values().stream()
+                .map(this::copy)
+                .collect(Collectors.toList());
     }
 
     @Override
     public Trainer update(Trainer trainer) {
-        log.debug("Updating trainer: {}", trainer);
-
         if (trainer.getId() == null || !storage.containsKey(trainer.getId())) {
-            log.error("Trainer not found for update: {}", trainer.getId());
-            throw new EntityNotFoundException("Trainer", trainer.getId());
+            throw new NoSuchElementException("Trainer with id " + trainer.getId() + " not found");
         }
+        Trainer stored = copy(trainer);
+        storage.put(stored.getId(), stored);
+        return copy(stored);
+    }
 
-        storage.put(trainer.getId(), trainer);
-        log.info("Updated trainer with id: {}", trainer.getId());
-        return trainer;
+    private Trainer copy(Trainer t) {
+        return Trainer.builder()
+                .id(t.getId())
+                .firstName(t.getFirstName())
+                .lastName(t.getLastName())
+                .username(t.getUsername())
+                .password(t.getPassword())
+                .isActive(t.getIsActive())
+                .specialization(copyTrainingType(t.getSpecialization()))
+                .build();
+    }
+
+    private TrainingType copyTrainingType(TrainingType t) {
+        if (t == null) return null;
+        return new TrainingType(t.getId(), t.getTrainingTypeName());
     }
 }

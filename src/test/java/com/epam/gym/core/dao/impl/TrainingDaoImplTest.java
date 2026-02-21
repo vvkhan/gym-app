@@ -21,7 +21,8 @@ class TrainingDaoImplTest {
     @BeforeEach
     void setUp() {
         storage = new HashMap<>();
-        trainingDao = new TrainingDaoImpl(storage);
+        trainingDao = new TrainingDaoImpl();
+        trainingDao.setStorage(storage);
     }
 
     @Test
@@ -73,6 +74,11 @@ class TrainingDaoImplTest {
         Optional<Training> found = trainingDao.findById(999L);
 
         assertFalse(found.isPresent());
+    }
+
+    @Test
+    void findById_ThrowExceptionWhenIdIsNull() {
+        assertThrows(IllegalArgumentException.class, () -> trainingDao.findById(null));
     }
 
     @Test
@@ -135,6 +141,11 @@ class TrainingDaoImplTest {
     }
 
     @Test
+    void findByTraineeId_ThrowExceptionWhenTraineeIdIsNull() {
+        assertThrows(IllegalArgumentException.class, () -> trainingDao.findByTraineeId(null));
+    }
+
+    @Test
     void findByTrainerId_ReturnTrainingsForTrainer() {
         Training training1 = new Training();
         training1.setId(1L);
@@ -166,5 +177,10 @@ class TrainingDaoImplTest {
         List<Training> trainerTrainings = trainingDao.findByTrainerId(999L);
 
         assertTrue(trainerTrainings.isEmpty());
+    }
+
+    @Test
+    void findByTrainerId_ThrowExceptionWhenTrainerIdIsNull() {
+        assertThrows(IllegalArgumentException.class, () -> trainingDao.findByTrainerId(null));
     }
 }

@@ -1,6 +1,6 @@
 package com.epam.gym.core.dao.impl;
 
-import com.epam.gym.core.exception.EntityNotFoundException;
+import java.util.NoSuchElementException;
 import com.epam.gym.core.model.Trainee;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -21,7 +21,8 @@ class TraineeDaoImplTest {
     @BeforeEach
     void setUp() {
         storage = new HashMap<>();
-        traineeDao = new TraineeDaoImpl(storage);
+        traineeDao = new TraineeDaoImpl();
+        traineeDao.setStorage(storage);
     }
 
     @Test
@@ -75,6 +76,11 @@ class TraineeDaoImplTest {
     }
 
     @Test
+    void findById_ThrowExceptionWhenIdIsNull() {
+        assertThrows(IllegalArgumentException.class, () -> traineeDao.findById(null));
+    }
+
+    @Test
     void findByUsername_ReturnTraineeWhenExists() {
         Trainee trainee = new Trainee();
         trainee.setId(1L);
@@ -92,6 +98,11 @@ class TraineeDaoImplTest {
         Optional<Trainee> found = traineeDao.findByUsername("nonexistent");
 
         assertFalse(found.isPresent());
+    }
+
+    @Test
+    void findByUsername_ThrowExceptionWhenUsernameIsNull() {
+        assertThrows(IllegalArgumentException.class, () -> traineeDao.findByUsername(null));
     }
 
     @Test
@@ -139,7 +150,7 @@ class TraineeDaoImplTest {
         trainee.setId(999L);
         trainee.setFirstName("John");
 
-        assertThrows(EntityNotFoundException.class, () -> traineeDao.update(trainee));
+        assertThrows(NoSuchElementException.class, () -> traineeDao.update(trainee));
     }
 
     @Test
@@ -156,6 +167,6 @@ class TraineeDaoImplTest {
 
     @Test
     void delete_ThrowExceptionWhenTraineeNotFound() {
-        assertThrows(EntityNotFoundException.class, () -> traineeDao.delete(999L));
+        assertThrows(NoSuchElementException.class, () -> traineeDao.delete(999L));
     }
 }

@@ -1,17 +1,17 @@
-package com.epam.gym.core.service.impl;
+package com.epam.gym.core.service;
 
 import com.epam.gym.core.dao.TraineeDao;
 import com.epam.gym.core.dao.TrainerDao;
 import com.epam.gym.core.dao.TrainingDao;
 import com.epam.gym.core.dao.TrainingTypeDao;
-import com.epam.gym.core.exception.EntityNotFoundException;
+import java.util.NoSuchElementException;
 import com.epam.gym.core.model.Trainee;
 import com.epam.gym.core.model.Trainer;
 import com.epam.gym.core.model.Training;
 import com.epam.gym.core.model.TrainingType;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -39,16 +39,8 @@ class TrainingServiceTest {
     @Mock
     private TrainingTypeDao trainingTypeDao;
 
+    @InjectMocks
     private TrainingService trainingService;
-
-    @BeforeEach
-    void setUp() {
-        trainingService = new TrainingService();
-        trainingService.setTrainingDao(trainingDao);
-        trainingService.setTraineeDao(traineeDao);
-        trainingService.setTrainerDao(trainerDao);
-        trainingService.setTrainingTypeDao(trainingTypeDao);
-    }
 
     @Test
     void createTraining_CreateTrainingWhenAllEntitiesExist() {
@@ -109,7 +101,7 @@ class TrainingServiceTest {
 
         when(traineeDao.findById(traineeId)).thenReturn(Optional.empty());
 
-        assertThrows(EntityNotFoundException.class, () ->
+        assertThrows(NoSuchElementException.class, () ->
                 trainingService.createTraining(traineeId, trainerId, "Training",
                                                trainingTypeId, LocalDate.now(), 60)
         );
@@ -132,7 +124,7 @@ class TrainingServiceTest {
         when(traineeDao.findById(traineeId)).thenReturn(Optional.of(trainee));
         when(trainerDao.findById(trainerId)).thenReturn(Optional.empty());
 
-        assertThrows(EntityNotFoundException.class, () ->
+        assertThrows(NoSuchElementException.class, () ->
                 trainingService.createTraining(traineeId, trainerId, "Training",
                                                trainingTypeId, LocalDate.now(), 60)
         );
@@ -159,7 +151,7 @@ class TrainingServiceTest {
         when(trainerDao.findById(trainerId)).thenReturn(Optional.of(trainer));
         when(trainingTypeDao.findById(trainingTypeId)).thenReturn(Optional.empty());
 
-        assertThrows(EntityNotFoundException.class, () ->
+        assertThrows(NoSuchElementException.class, () ->
                 trainingService.createTraining(traineeId, trainerId, "Training",
                                                trainingTypeId, LocalDate.now(), 60)
         );
@@ -177,6 +169,14 @@ class TrainingServiceTest {
     }
 
     @Test
+    void getTrainingById_ReturnEmptyWhenIdIsNull() {
+        Optional<Training> result = trainingService.getTrainingById(null);
+
+        assertFalse(result.isPresent());
+        verify(trainingDao, never()).findById(any());
+    }
+
+    @Test
     void getAllTrainings_DelegatesToDao() {
         trainingService.getAllTrainings();
         verify(trainingDao).findAll();
@@ -189,8 +189,24 @@ class TrainingServiceTest {
     }
 
     @Test
+    void getTrainingsByTrainee_ReturnEmptyListWhenTraineeIdIsNull() {
+        List<Training> result = trainingService.getTrainingsByTrainee(null);
+
+        assertTrue(result.isEmpty());
+        verify(trainingDao, never()).findByTraineeId(any());
+    }
+
+    @Test
     void getTrainingsByTrainer_DelegatesToDao() {
         trainingService.getTrainingsByTrainer(1L);
         verify(trainingDao).findByTrainerId(1L);
+    }
+
+    @Test
+    void getTrainingsByTrainer_ReturnEmptyListWhenTrainerIdIsNull() {
+        List<Training> result = trainingService.getTrainingsByTrainer(null);
+
+        assertTrue(result.isEmpty());
+        verify(trainingDao, never()).findByTrainerId(any());
     }
 }
