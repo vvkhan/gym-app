@@ -3,6 +3,7 @@ package com.epam.gym.core.dao.impl;
 import com.epam.gym.core.dao.TrainerDao;
 import java.util.NoSuchElementException;
 import com.epam.gym.core.model.Trainer;
+import com.epam.gym.core.aspect.LogExecution;
 import com.epam.gym.core.model.TrainingType;
 import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,6 +17,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+@LogExecution
 @Repository
 @DependsOn("trainerDataLoader")
 public class TrainerDaoImpl implements TrainerDao {
@@ -88,13 +90,7 @@ public class TrainerDaoImpl implements TrainerDao {
     }
 
     private Trainer copy(Trainer t) {
-        return Trainer.builder()
-                .id(t.getId())
-                .firstName(t.getFirstName())
-                .lastName(t.getLastName())
-                .username(t.getUsername())
-                .password(t.getPassword())
-                .isActive(t.getIsActive())
+        return t.toBuilder()
                 .specialization(copyTrainingType(t.getSpecialization()))
                 .build();
     }

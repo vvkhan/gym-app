@@ -5,6 +5,7 @@ import java.util.NoSuchElementException;
 import com.epam.gym.core.model.Trainee;
 import com.epam.gym.core.util.PasswordGenerator;
 import com.epam.gym.core.util.UsernameGenerator;
+import com.epam.gym.core.aspect.LogExecution;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -12,6 +13,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
+@LogExecution
 @Service
 public class TraineeService {
 

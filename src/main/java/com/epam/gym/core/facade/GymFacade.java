@@ -4,6 +4,7 @@ import com.epam.gym.core.model.Trainee;
 import com.epam.gym.core.model.Trainer;
 import com.epam.gym.core.model.Training;
 import com.epam.gym.core.model.TrainingType;
+import com.epam.gym.core.aspect.LogExecution;
 import com.epam.gym.core.service.TraineeService;
 import com.epam.gym.core.service.TrainerService;
 import com.epam.gym.core.service.TrainingService;
@@ -17,6 +18,7 @@ import java.util.Optional;
 /**
  * Does not bring any business logic value but required within the task
  */
+@LogExecution
 @Component
 public class GymFacade {
 

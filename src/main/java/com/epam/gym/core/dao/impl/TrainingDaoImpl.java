@@ -2,6 +2,7 @@ package com.epam.gym.core.dao.impl;
 
 import com.epam.gym.core.dao.TrainingDao;
 import com.epam.gym.core.model.Training;
+import com.epam.gym.core.aspect.LogExecution;
 import com.epam.gym.core.model.TrainingType;
 import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,6 +16,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+@LogExecution
 @Repository
 @DependsOn("trainingDataLoader")
 public class TrainingDaoImpl implements TrainingDao {
@@ -88,14 +90,8 @@ public class TrainingDaoImpl implements TrainingDao {
     }
 
     private Training copy(Training t) {
-        return Training.builder()
-                .id(t.getId())
-                .traineeId(t.getTraineeId())
-                .trainerId(t.getTrainerId())
-                .trainingName(t.getTrainingName())
+        return t.toBuilder()
                 .trainingType(copyTrainingType(t.getTrainingType()))
-                .trainingDate(t.getTrainingDate())
-                .duration(t.getDuration())
                 .build();
     }
 

@@ -7,6 +7,7 @@ import com.epam.gym.core.dao.TrainingTypeDao;
 import java.util.NoSuchElementException;
 import com.epam.gym.core.model.Training;
 import com.epam.gym.core.model.TrainingType;
+import com.epam.gym.core.aspect.LogExecution;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -15,6 +16,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
+@LogExecution
 @Service
 public class TrainingService {
 

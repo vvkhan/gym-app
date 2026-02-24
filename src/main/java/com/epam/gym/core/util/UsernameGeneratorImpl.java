@@ -1,5 +1,6 @@
 package com.epam.gym.core.util;
 
+import com.epam.gym.core.aspect.LogExecution;
 import com.epam.gym.core.model.Trainee;
 import com.epam.gym.core.model.Trainer;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,6 +10,7 @@ import org.springframework.stereotype.Component;
 import java.util.Map;
 import java.util.stream.Stream;
 
+@LogExecution
 @Component
 public class UsernameGeneratorImpl implements UsernameGenerator {
 

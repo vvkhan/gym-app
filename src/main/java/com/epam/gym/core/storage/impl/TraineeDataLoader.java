@@ -3,6 +3,7 @@ package com.epam.gym.core.storage.impl;
 import com.epam.gym.core.model.Trainee;
 import com.epam.gym.core.storage.InitialData;
 import com.epam.gym.core.storage.StorageDataLoader;
+import com.epam.gym.core.aspect.LogExecution;
 import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -10,6 +11,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.Map;
 
+@LogExecution
 @Component
 public class TraineeDataLoader implements StorageDataLoader {
 

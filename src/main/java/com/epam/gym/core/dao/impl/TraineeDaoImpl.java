@@ -3,6 +3,7 @@ package com.epam.gym.core.dao.impl;
 import com.epam.gym.core.dao.TraineeDao;
 import java.util.NoSuchElementException;
 import com.epam.gym.core.model.Trainee;
+import com.epam.gym.core.aspect.LogExecution;
 import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -15,6 +16,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+@LogExecution
 @Repository
 @DependsOn("traineeDataLoader")
 public class TraineeDaoImpl implements TraineeDao {
@@ -96,15 +98,6 @@ public class TraineeDaoImpl implements TraineeDao {
     }
 
     private Trainee copy(Trainee t) {
-        return Trainee.builder()
-                .id(t.getId())
-                .firstName(t.getFirstName())
-                .lastName(t.getLastName())
-                .username(t.getUsername())
-                .password(t.getPassword())
-                .isActive(t.getIsActive())
-                .dateOfBirth(t.getDateOfBirth())
-                .address(t.getAddress())
-                .build();
+        return t.toBuilder().build();
     }
 }

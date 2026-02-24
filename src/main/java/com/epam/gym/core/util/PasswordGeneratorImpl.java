@@ -1,9 +1,11 @@
 package com.epam.gym.core.util;
 
+import com.epam.gym.core.aspect.LogExecution;
 import org.springframework.stereotype.Component;
 
 import java.security.SecureRandom;
 
+@LogExecution
 @Component
 public class PasswordGeneratorImpl implements PasswordGenerator {
 

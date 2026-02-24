@@ -2,6 +2,7 @@ package com.epam.gym.core.dao.impl;
 
 import com.epam.gym.core.dao.TrainingTypeDao;
 import com.epam.gym.core.model.TrainingType;
+import com.epam.gym.core.aspect.LogExecution;
 import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -14,6 +15,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+@LogExecution
 @Repository
 @DependsOn("trainingTypeDataLoader")
 public class TrainingTypeDaoImpl implements TrainingTypeDao {

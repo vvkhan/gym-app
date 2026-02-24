@@ -15,9 +15,7 @@ public class LoggingAspect {
 
     private static final Logger log = LoggerFactory.getLogger(LoggingAspect.class);
 
-    @Around("execution(* com.epam.gym.core..*(..)) " +
-            "&& !within(com.epam.gym.core.aspect..*) " +
-            "&& !within(com.epam.gym.core.config..*)")
+    @Around("@within(com.epam.gym.core.aspect.LogExecution) || @annotation(com.epam.gym.core.aspect.LogExecution)")
     public Object logServiceMethod(ProceedingJoinPoint pjp) throws Throwable {
         String method = pjp.getSignature().toShortString();
         log.debug("Calling: {} args: {}", method, Arrays.toString(pjp.getArgs()));
