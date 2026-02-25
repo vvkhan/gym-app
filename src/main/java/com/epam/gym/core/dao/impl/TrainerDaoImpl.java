@@ -1,56 +1,28 @@
 package com.epam.gym.core.dao.impl;
 
 import com.epam.gym.core.dao.TrainerDao;
-import java.util.NoSuchElementException;
 import com.epam.gym.core.model.Trainer;
 import com.epam.gym.core.aspect.LogExecution;
-import com.epam.gym.core.model.TrainingType;
-import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Repository;
+import org.hibernate.SessionFactory;
+import com.epam.gym.core.model.Training;
 
-import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
+import java.time.LocalDate;
 
 @LogExecution
 @Repository
-@DependsOn("trainerDataLoader")
 public class TrainerDaoImpl implements TrainerDao {
 
-    private Map<Long, Trainer> storage;
-    private long currentId = 1;
-
     @Autowired
-    public void setStorage(@Qualifier("trainerStorage") Map<Long, Trainer> storage) {
-        this.storage = storage;
-    }
-
-    @PostConstruct
-    public void initCurrentId() {
-        if (!storage.isEmpty()) {
-            currentId = Collections.max(storage.keySet()) + 1;
-        }
-    }
+    private SessionFactory sessionFactory;
 
     @Override
     public Trainer create(Trainer trainer) {
-        Long id = currentId++;
-        Trainer stored = Trainer.builder()
-                .id(id)
-                .firstName(trainer.getFirstName())
-                .lastName(trainer.getLastName())
-                .username(trainer.getUsername())
-                .password(trainer.getPassword())
-                .isActive(trainer.getIsActive())
-                .specialization(copyTrainingType(trainer.getSpecialization()))
-                .build();
-        storage.put(id, stored);
-        return copy(stored);
+        sessionFactory.getCurrentSession().persist(trainer);
+        return trainer;
     }
 
     @Override
@@ -58,7 +30,7 @@ public class TrainerDaoImpl implements TrainerDao {
         if (id == null) {
             throw new IllegalArgumentException("Id must not be null");
         }
-        return Optional.ofNullable(storage.get(id)).map(this::copy);
+        return Optional.ofNullable(sessionFactory.getCurrentSession().get(Trainer.class, id));
     }
 
     @Override
@@ -66,37 +38,60 @@ public class TrainerDaoImpl implements TrainerDao {
         if (username == null) {
             throw new IllegalArgumentException("Username must not be null");
         }
-        return storage.values().stream()
-                .filter(trainer -> username.equals(trainer.getUsername()))
-                .findFirst()
-                .map(this::copy);
+        return sessionFactory.getCurrentSession()
+                .createQuery("from Trainer t where t.user.username = :u", Trainer.class)
+                .setParameter("u", username)
+                .uniqueResultOptional();
     }
 
     @Override
     public List<Trainer> findAll() {
-        return storage.values().stream()
-                .map(this::copy)
-                .collect(Collectors.toList());
+        return sessionFactory.getCurrentSession()
+                .createQuery("from Trainer", Trainer.class)
+                .list();
     }
 
     @Override
     public Trainer update(Trainer trainer) {
-        if (trainer.getId() == null || !storage.containsKey(trainer.getId())) {
-            throw new NoSuchElementException("Trainer with id " + trainer.getId() + " not found");
-        }
-        Trainer stored = copy(trainer);
-        storage.put(stored.getId(), stored);
-        return copy(stored);
+        return sessionFactory.getCurrentSession().merge(trainer);
     }
 
-    private Trainer copy(Trainer t) {
-        return t.toBuilder()
-                .specialization(copyTrainingType(t.getSpecialization()))
-                .build();
+    @Override
+    public List<Trainer> findNotAssignedTrainers(String traineeUsername) {
+        return sessionFactory.getCurrentSession()
+                .createQuery("from Trainer t where t not in (" +
+                        "select tr from Trainee te join te.trainers tr " +
+                        "where te.user.username = :u)", Trainer.class)
+                .setParameter("u", traineeUsername)
+                .list();
     }
 
-    private TrainingType copyTrainingType(TrainingType t) {
-        if (t == null) return null;
-        return new TrainingType(t.getId(), t.getTrainingTypeName());
+    @Override
+    public List<Training> findTrainingsByCriteria(String trainerUsername, LocalDate fromDate,
+                                                  LocalDate toDate, String traineeName) {
+        StringBuilder hql = new StringBuilder("from Training t where t.trainer.user.username = :u");
+        if (fromDate != null) { hql.append(" and t.trainingDate >= :from"); }
+        if (toDate != null) { hql.append(" and t.trainingDate <= :to"); }
+        if (traineeName != null) { hql.append(" and t.trainee.user.username = :trainee"); }
+
+        var query = sessionFactory.getCurrentSession()
+                .createQuery(hql.toString(), Training.class)
+                .setParameter("u", trainerUsername);
+
+        if (fromDate != null) { query.setParameter("from", fromDate); }
+        if (toDate != null ) { query.setParameter("to", toDate); }
+        if (traineeName != null ) { query.setParameter("trainee", traineeName); }
+
+        return query.list();
+    }
+
+    @Override
+    public List<String> findUsernamesByPrefix(String prefix) {
+        return sessionFactory.getCurrentSession()
+                .createQuery("select t.user.username from Trainer t " +
+                        "where t.user.username = :exact or t.user.username like :pattern", String.class)
+                .setParameter("exact", prefix)
+                .setParameter("pattern", prefix + "%")
+                .list();
     }
 }

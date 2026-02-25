@@ -7,7 +7,8 @@ import java.util.Optional;
 
 public interface TrainingTypeDao {
 
-    TrainingType create(TrainingType trainingType);
+    // Obsolete since the entity is immutable, seeded via sql script
+    // TrainingType create(TrainingType trainingType);
 
     Optional<TrainingType> findById(Long id);
 

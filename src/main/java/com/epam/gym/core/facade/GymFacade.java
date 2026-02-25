@@ -15,9 +15,6 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
-/**
- * Does not bring any business logic value but required within the task
- */
 @LogExecution
 @Component
 public class GymFacade {
@@ -34,25 +31,48 @@ public class GymFacade {
         this.trainingService = trainingService;
     }
 
+    // Authentication
+
+    public boolean authenticateTrainee(String username, String password) {
+        return traineeService.authenticate(username, password);
+    }
+
+    public boolean authenticateTrainer(String username, String password) {
+        return trainerService.authenticate(username, password);
+    }
+
     // Trainee operations
 
-    public Trainee registerTrainee(String firstName, String lastName, LocalDate dateOfBirth, String address) {
+    public Trainee registerTrainee(String firstName, String lastName,
+                                   LocalDate dateOfBirth, String address) {
         return traineeService.createTrainee(firstName, lastName, dateOfBirth, address);
     }
 
-    public Trainee updateTraineeProfile(Long id, String firstName, String lastName, LocalDate dateOfBirth,
-                                        String address, Boolean isActive) {
-        if (id == null) {
-            return null;
-        }
-        return traineeService.updateTrainee(id, firstName, lastName, dateOfBirth, address, isActive);
+    public Trainee updateTraineeProfile(String username, String password,
+                                        String firstName, String lastName,
+                                        LocalDate dateOfBirth, String address, Boolean isActive) {
+        requireTraineeAuth(username, password);
+        return traineeService.updateTrainee(username, firstName, lastName, dateOfBirth, address, isActive);
     }
 
-    public void deleteTrainee(Long id) {
-        if (id == null) {
-            return;
-        }
-        traineeService.deleteTrainee(id);
+    public void deleteTrainee(String username, String password) {
+        requireTraineeAuth(username, password);
+        traineeService.deleteTrainee(username);
+    }
+
+    public void changeTraineePassword(String username, String currentPassword, String newPassword) {
+        requireTraineeAuth(username, currentPassword);
+        traineeService.changePassword(username, currentPassword, newPassword);
+    }
+
+    public void activateTrainee(String username, String password) {
+        requireTraineeAuth(username, password);
+        traineeService.activate(username);
+    }
+
+    public void deactivateTrainee(String username, String password) {
+        requireTraineeAuth(username, password);
+        traineeService.deactivate(username);
     }
 
     public Optional<Trainee> getTrainee(Long id) {
@@ -67,17 +87,50 @@ public class GymFacade {
         return traineeService.getAllTrainees();
     }
 
+    public List<Training> getTraineeTrainings(String username, String password,
+                                              LocalDate fromDate, LocalDate toDate,
+                                              String trainerName, String trainingTypeName) {
+        requireTraineeAuth(username, password);
+        return traineeService.getTrainings(username, fromDate, toDate, trainerName, trainingTypeName);
+    }
+
+    public List<Trainer> getNotAssignedTrainers(String traineeUsername, String password) {
+        requireTraineeAuth(traineeUsername, password);
+        return traineeService.getNotAssignedTrainers(traineeUsername);
+    }
+
+    public Trainee updateTraineeTrainers(String traineeUsername, String password,
+                                         List<String> trainerUsernames) {
+        requireTraineeAuth(traineeUsername, password);
+        return traineeService.updateTrainers(traineeUsername, trainerUsernames);
+    }
+
     // Trainer operations
 
     public Trainer registerTrainer(String firstName, String lastName, Long trainingTypeId) {
         return trainerService.createTrainer(firstName, lastName, trainingTypeId);
     }
 
-    public Trainer updateTrainerProfile(Long id, String firstName, String lastName, Long trainingTypeId, Boolean isActive) {
-        if (id == null) {
-            return null;
-        }
-        return trainerService.updateTrainer(id, firstName, lastName, trainingTypeId, isActive);
+    public Trainer updateTrainerProfile(String username, String password,
+                                        String firstName, String lastName,
+                                        Long trainingTypeId, Boolean isActive) {
+        requireTrainerAuth(username, password);
+        return trainerService.updateTrainer(username, firstName, lastName, trainingTypeId, isActive);
+    }
+
+    public void changeTrainerPassword(String username, String currentPassword, String newPassword) {
+        requireTrainerAuth(username, currentPassword);
+        trainerService.changePassword(username, currentPassword, newPassword);
+    }
+
+    public void activateTrainer(String username, String password) {
+        requireTrainerAuth(username, password);
+        trainerService.activate(username);
+    }
+
+    public void deactivateTrainer(String username, String password) {
+        requireTrainerAuth(username, password);
+        trainerService.deactivate(username);
     }
 
     public Optional<Trainer> getTrainer(Long id) {
@@ -92,11 +145,19 @@ public class GymFacade {
         return trainerService.getAllTrainers();
     }
 
+    public List<Training> getTrainerTrainings(String username, String password,
+                                              LocalDate fromDate, LocalDate toDate,
+                                              String traineeName) {
+        requireTrainerAuth(username, password);
+        return trainerService.getTrainings(username, fromDate, toDate, traineeName);
+    }
+
     // Training operations
 
     public Training createTraining(Long traineeId, Long trainerId, String trainingName,
                                    Long trainingTypeId, LocalDate trainingDate, Integer duration) {
-        return trainingService.createTraining(traineeId, trainerId, trainingName, trainingTypeId, trainingDate, duration);
+        return trainingService.createTraining(traineeId, trainerId, trainingName,
+                trainingTypeId, trainingDate, duration);
     }
 
     public Optional<Training> getTraining(Long id) {
@@ -107,16 +168,21 @@ public class GymFacade {
         return trainingService.getAllTrainings();
     }
 
-    public List<Training> getTraineeTrainings(Long traineeId) {
-        return trainingService.getTrainingsByTrainee(traineeId);
-    }
-
-    public List<Training> getTrainerTrainings(Long trainerId) {
-        return trainingService.getTrainingsByTrainer(trainerId);
-    }
-
-    // Utility operation
     public List<TrainingType> getAllTrainingTypes() {
         return trainingService.getAllTrainingTypes();
+    }
+
+    // Helper
+
+    private void requireTraineeAuth(String username, String password) {
+        if (!traineeService.authenticate(username, password)) {
+            throw new SecurityException("Authentication failed for trainee: " + username);
+        }
+    }
+
+    private void requireTrainerAuth(String username, String password) {
+        if (!trainerService.authenticate(username, password)) {
+            throw new SecurityException("Authentication failed for trainer: " + username);
+        }
     }
 }

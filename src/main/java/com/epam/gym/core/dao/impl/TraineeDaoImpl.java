@@ -1,56 +1,30 @@
 package com.epam.gym.core.dao.impl;
 
 import com.epam.gym.core.dao.TraineeDao;
+import com.epam.gym.core.model.Training;
 import java.util.NoSuchElementException;
 import com.epam.gym.core.model.Trainee;
 import com.epam.gym.core.aspect.LogExecution;
-import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Repository;
+import org.hibernate.SessionFactory;
+import org.hibernate.Session;
 
-import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
+import java.time.LocalDate;
 
 @LogExecution
 @Repository
-@DependsOn("traineeDataLoader")
 public class TraineeDaoImpl implements TraineeDao {
 
-    private Map<Long, Trainee> storage;
-    private long currentId = 1;
-
     @Autowired
-    public void setStorage(@Qualifier("traineeStorage") Map<Long, Trainee> storage) {
-        this.storage = storage;
-    }
-
-    @PostConstruct
-    public void initCurrentId() {
-        if (!storage.isEmpty()) {
-            currentId = Collections.max(storage.keySet()) + 1;
-        }
-    }
+    private SessionFactory sessionFactory;
 
     @Override
     public Trainee create(Trainee trainee) {
-        Long id = currentId++;
-        Trainee stored = Trainee.builder()
-                .id(id)
-                .firstName(trainee.getFirstName())
-                .lastName(trainee.getLastName())
-                .username(trainee.getUsername())
-                .password(trainee.getPassword())
-                .isActive(trainee.getIsActive())
-                .dateOfBirth(trainee.getDateOfBirth())
-                .address(trainee.getAddress())
-                .build();
-        storage.put(id, stored);
-        return copy(stored);
+        sessionFactory.getCurrentSession().persist(trainee);
+        return trainee;
     }
 
     @Override
@@ -58,7 +32,7 @@ public class TraineeDaoImpl implements TraineeDao {
         if (id == null) {
             throw new IllegalArgumentException("Id must not be null");
         }
-        return Optional.ofNullable(storage.get(id)).map(this::copy);
+        return Optional.ofNullable(sessionFactory.getCurrentSession().get(Trainee.class, id));
     }
 
     @Override
@@ -66,38 +40,61 @@ public class TraineeDaoImpl implements TraineeDao {
         if (username == null) {
             throw new IllegalArgumentException("Username must not be null");
         }
-        return storage.values().stream()
-                .filter(trainee -> username.equals(trainee.getUsername()))
-                .findFirst()
-                .map(this::copy);
+        return sessionFactory.getCurrentSession()
+                .createQuery("from Trainee t where t.user.username = :u", Trainee.class)
+                .setParameter("u", username)
+                .uniqueResultOptional();
     }
 
     @Override
     public List<Trainee> findAll() {
-        return storage.values().stream()
-                .map(this::copy)
-                .collect(Collectors.toList());
+        return sessionFactory.getCurrentSession()
+                .createQuery("from Trainee", Trainee.class)
+                .list();
     }
 
     @Override
     public Trainee update(Trainee trainee) {
-        if (trainee.getId() == null || !storage.containsKey(trainee.getId())) {
-            throw new NoSuchElementException("Trainee with id " + trainee.getId() + " not found");
-        }
-        Trainee stored = copy(trainee);
-        storage.put(stored.getId(), stored);
-        return copy(stored);
+        return sessionFactory.getCurrentSession().merge(trainee);
     }
 
     @Override
-    public void delete(Long id) {
-        Trainee removed = storage.remove(id);
-        if (removed == null) {
-            throw new NoSuchElementException("Trainee with id " + id + " not found");
-        }
+    public void delete(String username) {
+        Trainee trainee = findByUsername(username)
+                .orElseThrow(() -> new NoSuchElementException("Trainee not found: " + username));
+        Session session = sessionFactory.getCurrentSession();
+        session.remove(session.contains(trainee) ? trainee : session.merge(trainee));
     }
 
-    private Trainee copy(Trainee t) {
-        return t.toBuilder().build();
+    @Override
+    public List<Training> findTrainingsByCriteria(String traineeUsername, LocalDate fromDate,
+                                                  LocalDate toDate, String trainerName,
+                                                  String trainingTypeName) {
+        StringBuilder hql = new StringBuilder("from Training t where t.trainee.user.username = :u");
+        if (fromDate!= null) { hql.append(" and t.trainingDate >= :from"); }
+        if (toDate!= null) { hql.append(" and t.trainingDate <= :to"); }
+        if (trainerName!= null) { hql.append(" and t.trainer.user.username = :trainer"); }
+        if (trainingTypeName!= null) { hql.append(" and t.trainingType.trainingTypeName = :type"); }
+
+        var query = sessionFactory.getCurrentSession()
+                .createQuery(hql.toString(), Training.class)
+                .setParameter("u", traineeUsername);
+
+        if (fromDate != null) { query.setParameter("from", fromDate); }
+        if (toDate != null ) { query.setParameter("to", toDate); }
+        if (trainerName != null ) { query.setParameter("trainer", trainerName); }
+        if (trainingTypeName != null ) { query.setParameter("type", trainingTypeName); }
+
+        return query.list();
+    }
+
+    @Override
+    public List<String> findUsernamesByPrefix(String prefix) {
+        return sessionFactory.getCurrentSession()
+                .createQuery("select t.user.username from Trainee t " +
+                        "where t.user.username = :exact or t.user.username like :pattern", String.class)
+                .setParameter("exact", prefix)
+                .setParameter("pattern", prefix + "%")
+                .list();
     }
 }

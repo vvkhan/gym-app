@@ -1,186 +1,122 @@
 package com.epam.gym.core.dao.impl;
 
 import com.epam.gym.core.model.Training;
-import com.epam.gym.core.model.TrainingType;
+import org.hibernate.Session;
+import org.hibernate.SessionFactory;
+import org.hibernate.query.Query;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.time.LocalDate;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
+@ExtendWith(MockitoExtension.class)
 class TrainingDaoImplTest {
 
+    @Mock
+    private SessionFactory sessionFactory;
+
+    @Mock
+    private Session session;
+
+    @Mock
+    private Query<Training> trainingQuery;
+
+    @InjectMocks
     private TrainingDaoImpl trainingDao;
-    private Map<Long, Training> storage;
 
     @BeforeEach
     void setUp() {
-        storage = new HashMap<>();
-        trainingDao = new TrainingDaoImpl();
-        trainingDao.setStorage(storage);
+        lenient().when(sessionFactory.getCurrentSession()).thenReturn(session);
     }
 
     @Test
-    void create_GenerateIdAndStoreTraining() {
+    void create_PersistAndReturnTraining() {
         Training training = new Training();
-        training.setTraineeId(1L);
-        training.setTrainerId(2L);
-        training.setTrainingName("Cardio Session");
+        doNothing().when(session).persist(training);
 
-        Training created = trainingDao.create(training);
+        Training result = trainingDao.create(training);
 
-        assertNotNull(created.getId());
-        assertEquals(1L, created.getId());
-        assertTrue(storage.containsKey(1L));
-        assertEquals("Cardio Session", storage.get(1L).getTrainingName());
+        verify(session).persist(training);
+        assertEquals(training, result);
     }
 
     @Test
-    void create_IncrementIdForMultipleTrainings() {
-        Training training1 = new Training();
-        training1.setTrainingName("Session 1");
-
-        Training training2 = new Training();
-        training2.setTrainingName("Session 2");
-
-        Training created1 = trainingDao.create(training1);
-        Training created2 = trainingDao.create(training2);
-
-        assertEquals(1L, created1.getId());
-        assertEquals(2L, created2.getId());
-        assertEquals(2, storage.size());
-    }
-
-    @Test
-    void findById_ReturnTrainingWhenExists() {
+    void findById_ReturnTraining() {
         Training training = new Training();
-        training.setId(1L);
-        training.setTrainingName("Cardio");
-        storage.put(1L, training);
+        when(session.get(Training.class, 1L)).thenReturn(training);
 
-        Optional<Training> found = trainingDao.findById(1L);
+        Optional<Training> result = trainingDao.findById(1L);
 
-        assertTrue(found.isPresent());
-        assertEquals("Cardio", found.get().getTrainingName());
+        assertTrue(result.isPresent());
+        assertEquals(training, result.get());
     }
 
     @Test
-    void findById_ReturnEmptyWhenNotExists() {
-        Optional<Training> found = trainingDao.findById(999L);
+    void findById_ReturnEmptyWhenNotFound() {
+        when(session.get(Training.class, 99L)).thenReturn(null);
 
-        assertFalse(found.isPresent());
+        assertFalse(trainingDao.findById(99L).isPresent());
     }
 
     @Test
-    void findById_ThrowExceptionWhenIdIsNull() {
+    void findById_ThrowWhenIdIsNull() {
         assertThrows(IllegalArgumentException.class, () -> trainingDao.findById(null));
+        verify(session, never()).get(any(Class.class), any());
     }
 
     @Test
-    void findAll_ReturnAllTrainings() {
-        Training training1 = new Training();
-        training1.setId(1L);
-        training1.setTrainingName("Session 1");
+    void findAll_ReturnList() {
+        List<Training> trainings = List.of(new Training(), new Training());
+        when(session.createQuery(anyString(), eq(Training.class))).thenReturn(trainingQuery);
+        when(trainingQuery.list()).thenReturn(trainings);
 
-        Training training2 = new Training();
-        training2.setId(2L);
-        training2.setTrainingName("Session 2");
-
-        storage.put(1L, training1);
-        storage.put(2L, training2);
-
-        List<Training> all = trainingDao.findAll();
-
-        assertEquals(2, all.size());
+        assertEquals(2, trainingDao.findAll().size());
     }
 
     @Test
-    void findAll_ReturnEmptyListWhenNoTrainings() {
-        List<Training> all = trainingDao.findAll();
+    void findByTraineeId_ReturnList() {
+        List<Training> trainings = List.of(new Training(), new Training());
+        when(session.createQuery(anyString(), eq(Training.class))).thenReturn(trainingQuery);
+        when(trainingQuery.setParameter(anyString(), any())).thenReturn(trainingQuery);
+        when(trainingQuery.list()).thenReturn(trainings);
 
-        assertTrue(all.isEmpty());
+        List<Training> result = trainingDao.findByTraineeId(1L);
+
+        assertEquals(2, result.size());
+        verify(trainingQuery).setParameter(eq("id"), eq(1L));
     }
 
     @Test
-    void findByTraineeId_ReturnTrainingsForTrainee() {
-        Training training1 = new Training();
-        training1.setId(1L);
-        training1.setTraineeId(100L);
-        training1.setTrainingName("Session 1");
-
-        Training training2 = new Training();
-        training2.setId(2L);
-        training2.setTraineeId(100L);
-        training2.setTrainingName("Session 2");
-
-        Training training3 = new Training();
-        training3.setId(3L);
-        training3.setTraineeId(200L);
-        training3.setTrainingName("Session 3");
-
-        storage.put(1L, training1);
-        storage.put(2L, training2);
-        storage.put(3L, training3);
-
-        List<Training> traineeTrainings = trainingDao.findByTraineeId(100L);
-
-        assertEquals(2, traineeTrainings.size());
-        assertTrue(traineeTrainings.stream().allMatch(t -> t.getTraineeId().equals(100L)));
-    }
-
-    @Test
-    void findByTraineeId_ReturnEmptyListWhenNoMatch() {
-        List<Training> traineeTrainings = trainingDao.findByTraineeId(999L);
-
-        assertTrue(traineeTrainings.isEmpty());
-    }
-
-    @Test
-    void findByTraineeId_ThrowExceptionWhenTraineeIdIsNull() {
+    void findByTraineeId_ThrowWhenIdIsNull() {
         assertThrows(IllegalArgumentException.class, () -> trainingDao.findByTraineeId(null));
+        verify(session, never()).createQuery(anyString(), any(Class.class));
     }
 
     @Test
-    void findByTrainerId_ReturnTrainingsForTrainer() {
-        Training training1 = new Training();
-        training1.setId(1L);
-        training1.setTrainerId(50L);
-        training1.setTrainingName("Session 1");
+    void findByTrainerId_ReturnList() {
+        List<Training> trainings = List.of(new Training());
+        when(session.createQuery(anyString(), eq(Training.class))).thenReturn(trainingQuery);
+        when(trainingQuery.setParameter(anyString(), any())).thenReturn(trainingQuery);
+        when(trainingQuery.list()).thenReturn(trainings);
 
-        Training training2 = new Training();
-        training2.setId(2L);
-        training2.setTrainerId(50L);
-        training2.setTrainingName("Session 2");
+        List<Training> result = trainingDao.findByTrainerId(2L);
 
-        Training training3 = new Training();
-        training3.setId(3L);
-        training3.setTrainerId(60L);
-        training3.setTrainingName("Session 3");
-
-        storage.put(1L, training1);
-        storage.put(2L, training2);
-        storage.put(3L, training3);
-
-        List<Training> trainerTrainings = trainingDao.findByTrainerId(50L);
-
-        assertEquals(2, trainerTrainings.size());
-        assertTrue(trainerTrainings.stream().allMatch(t -> t.getTrainerId().equals(50L)));
+        assertEquals(1, result.size());
+        verify(trainingQuery).setParameter(eq("id"), eq(2L));
     }
 
     @Test
-    void findByTrainerId_ReturnEmptyListWhenNoMatch() {
-        List<Training> trainerTrainings = trainingDao.findByTrainerId(999L);
-
-        assertTrue(trainerTrainings.isEmpty());
-    }
-
-    @Test
-    void findByTrainerId_ThrowExceptionWhenTrainerIdIsNull() {
+    void findByTrainerId_ThrowWhenIdIsNull() {
         assertThrows(IllegalArgumentException.class, () -> trainingDao.findByTrainerId(null));
+        verify(session, never()).createQuery(anyString(), any(Class.class));
     }
 }

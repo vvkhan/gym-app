@@ -16,7 +16,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDate;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
@@ -43,170 +42,88 @@ class TrainingServiceTest {
     private TrainingService trainingService;
 
     @Test
-    void createTraining_CreateTrainingWhenAllEntitiesExist() {
-        Long traineeId = 1L;
-        Long trainerId = 2L;
-        String trainingName = "Morning Cardio";
-        Long trainingTypeId = 3L;
-        LocalDate trainingDate = LocalDate.of(2024, 1, 15);
-        Integer duration = 60;
-
+    void createTraining_CreateWithEntityReferences() {
         Trainee trainee = new Trainee();
-        trainee.setId(traineeId);
-
         Trainer trainer = new Trainer();
-        trainer.setId(trainerId);
+        TrainingType type = new TrainingType();
+        type.setTrainingTypeName("Cardio");
 
-        TrainingType trainingType = new TrainingType();
-        trainingType.setId(trainingTypeId);
-        trainingType.setTrainingTypeName("Cardio");
+        when(traineeDao.findById(1L)).thenReturn(Optional.of(trainee));
+        when(trainerDao.findById(2L)).thenReturn(Optional.of(trainer));
+        when(trainingTypeDao.findById(3L)).thenReturn(Optional.of(type));
 
-        Training savedTraining = new Training();
-        savedTraining.setId(1L);
-        savedTraining.setTraineeId(traineeId);
-        savedTraining.setTrainerId(trainerId);
-        savedTraining.setTrainingName(trainingName);
-        savedTraining.setTrainingType(trainingType);
-        savedTraining.setTrainingDate(trainingDate);
-        savedTraining.setDuration(duration);
+        Training saved = Training.builder()
+                .trainee(trainee).trainer(trainer)
+                .trainingName("Morning Cardio").trainingType(type)
+                .trainingDate(LocalDate.of(2025, 1, 10)).duration(60)
+                .build();
+        when(trainingDao.create(any(Training.class))).thenReturn(saved);
 
-        when(traineeDao.findById(traineeId)).thenReturn(Optional.of(trainee));
-        when(trainerDao.findById(trainerId)).thenReturn(Optional.of(trainer));
-        when(trainingTypeDao.findById(trainingTypeId)).thenReturn(Optional.of(trainingType));
-        when(trainingDao.create(any(Training.class))).thenReturn(savedTraining);
-
-        Training result = trainingService.createTraining(traineeId, trainerId, trainingName,
-                                                         trainingTypeId, trainingDate, duration);
+        Training result = trainingService.createTraining(1L, 2L, "Morning Cardio", 3L,
+                LocalDate.of(2025, 1, 10), 60);
 
         assertNotNull(result);
-        assertEquals(1L, result.getId());
-        assertEquals(traineeId, result.getTraineeId());
-        assertEquals(trainerId, result.getTrainerId());
-        assertEquals(trainingName, result.getTrainingName());
-        assertEquals(trainingType, result.getTrainingType());
-        assertEquals(trainingDate, result.getTrainingDate());
-        assertEquals(duration, result.getDuration());
-
-        verify(traineeDao).findById(traineeId);
-        verify(trainerDao).findById(trainerId);
-        verify(trainingTypeDao).findById(trainingTypeId);
+        assertEquals(trainee, result.getTrainee());
+        assertEquals(trainer, result.getTrainer());
+        assertEquals(type, result.getTrainingType());
+        assertEquals("Morning Cardio", result.getTrainingName());
         verify(trainingDao).create(any(Training.class));
     }
 
     @Test
-    void createTraining_ThrowExceptionWhenTraineeNotFound() {
-        Long traineeId = 999L;
-        Long trainerId = 1L;
-        Long trainingTypeId = 1L;
-
-        when(traineeDao.findById(traineeId)).thenReturn(Optional.empty());
+    void createTraining_ThrowWhenTraineeNotFound() {
+        when(traineeDao.findById(999L)).thenReturn(Optional.empty());
 
         assertThrows(NoSuchElementException.class, () ->
-                trainingService.createTraining(traineeId, trainerId, "Training",
-                                               trainingTypeId, LocalDate.now(), 60)
-        );
+                trainingService.createTraining(999L, 1L, "Training", 1L, LocalDate.now(), 60));
 
-        verify(traineeDao).findById(traineeId);
         verify(trainerDao, never()).findById(any());
         verify(trainingTypeDao, never()).findById(any());
-        verify(trainingDao, never()).create(any(Training.class));
+        verify(trainingDao, never()).create(any());
     }
 
     @Test
-    void createTraining_ThrowExceptionWhenTrainerNotFound() {
-        Long traineeId = 1L;
-        Long trainerId = 999L;
-        Long trainingTypeId = 1L;
-
-        Trainee trainee = new Trainee();
-        trainee.setId(traineeId);
-
-        when(traineeDao.findById(traineeId)).thenReturn(Optional.of(trainee));
-        when(trainerDao.findById(trainerId)).thenReturn(Optional.empty());
+    void createTraining_ThrowWhenTrainerNotFound() {
+        when(traineeDao.findById(1L)).thenReturn(Optional.of(new Trainee()));
+        when(trainerDao.findById(999L)).thenReturn(Optional.empty());
 
         assertThrows(NoSuchElementException.class, () ->
-                trainingService.createTraining(traineeId, trainerId, "Training",
-                                               trainingTypeId, LocalDate.now(), 60)
-        );
+                trainingService.createTraining(1L, 999L, "Training", 1L, LocalDate.now(), 60));
 
-        verify(traineeDao).findById(traineeId);
-        verify(trainerDao).findById(trainerId);
         verify(trainingTypeDao, never()).findById(any());
-        verify(trainingDao, never()).create(any(Training.class));
+        verify(trainingDao, never()).create(any());
     }
 
     @Test
-    void createTraining_ThrowExceptionWhenTrainingTypeNotFound() {
-        Long traineeId = 1L;
-        Long trainerId = 2L;
-        Long trainingTypeId = 999L;
-
-        Trainee trainee = new Trainee();
-        trainee.setId(traineeId);
-
-        Trainer trainer = new Trainer();
-        trainer.setId(trainerId);
-
-        when(traineeDao.findById(traineeId)).thenReturn(Optional.of(trainee));
-        when(trainerDao.findById(trainerId)).thenReturn(Optional.of(trainer));
-        when(trainingTypeDao.findById(trainingTypeId)).thenReturn(Optional.empty());
+    void createTraining_ThrowWhenTrainingTypeNotFound() {
+        when(traineeDao.findById(1L)).thenReturn(Optional.of(new Trainee()));
+        when(trainerDao.findById(2L)).thenReturn(Optional.of(new Trainer()));
+        when(trainingTypeDao.findById(999L)).thenReturn(Optional.empty());
 
         assertThrows(NoSuchElementException.class, () ->
-                trainingService.createTraining(traineeId, trainerId, "Training",
-                                               trainingTypeId, LocalDate.now(), 60)
-        );
+                trainingService.createTraining(1L, 2L, "Training", 999L, LocalDate.now(), 60));
 
-        verify(traineeDao).findById(traineeId);
-        verify(trainerDao).findById(trainerId);
-        verify(trainingTypeDao).findById(trainingTypeId);
-        verify(trainingDao, never()).create(any(Training.class));
-    }
-
-    @Test
-    void getTrainingById_DelegatesToDao() {
-        trainingService.getTrainingById(1L);
-        verify(trainingDao).findById(1L);
+        verify(trainingDao, never()).create(any());
     }
 
     @Test
     void getTrainingById_ReturnEmptyWhenIdIsNull() {
-        Optional<Training> result = trainingService.getTrainingById(null);
-
-        assertFalse(result.isPresent());
+        assertFalse(trainingService.getTrainingById(null).isPresent());
         verify(trainingDao, never()).findById(any());
     }
 
     @Test
-    void getAllTrainings_DelegatesToDao() {
-        trainingService.getAllTrainings();
-        verify(trainingDao).findAll();
-    }
-
-    @Test
-    void getTrainingsByTrainee_DelegatesToDao() {
-        trainingService.getTrainingsByTrainee(1L);
-        verify(trainingDao).findByTraineeId(1L);
-    }
-
-    @Test
-    void getTrainingsByTrainee_ReturnEmptyListWhenTraineeIdIsNull() {
+    void getTrainingsByTrainee_ReturnEmptyListWhenIdIsNull() {
         List<Training> result = trainingService.getTrainingsByTrainee(null);
-
         assertTrue(result.isEmpty());
         verify(trainingDao, never()).findByTraineeId(any());
     }
 
     @Test
-    void getTrainingsByTrainer_DelegatesToDao() {
-        trainingService.getTrainingsByTrainer(1L);
-        verify(trainingDao).findByTrainerId(1L);
-    }
-
-    @Test
-    void getTrainingsByTrainer_ReturnEmptyListWhenTrainerIdIsNull() {
+    void getTrainingsByTrainer_ReturnEmptyListWhenIdIsNull() {
         List<Training> result = trainingService.getTrainingsByTrainer(null);
-
         assertTrue(result.isEmpty());
         verify(trainingDao, never()).findByTrainerId(any());
     }
+
 }

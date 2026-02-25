@@ -1,129 +1,104 @@
 package com.epam.gym.core.dao.impl;
 
 import com.epam.gym.core.model.TrainingType;
+import org.hibernate.Session;
+import org.hibernate.SessionFactory;
+import org.hibernate.query.Query;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
+@ExtendWith(MockitoExtension.class)
 class TrainingTypeDaoImplTest {
 
+    @Mock
+    private SessionFactory sessionFactory;
+
+    @Mock
+    private Session session;
+
+    @Mock
+    private Query<TrainingType> query;
+
+    @InjectMocks
     private TrainingTypeDaoImpl trainingTypeDao;
-    private Map<Long, TrainingType> storage;
 
     @BeforeEach
     void setUp() {
-        storage = new HashMap<>();
-        trainingTypeDao = new TrainingTypeDaoImpl();
-        trainingTypeDao.setStorage(storage);
+        lenient().when(sessionFactory.getCurrentSession()).thenReturn(session);
     }
 
     @Test
-    void create_GenerateIdAndStoreTrainingType() {
-        TrainingType trainingType = new TrainingType();
-        trainingType.setTrainingTypeName("Cardio");
+    void findById_ReturnTrainingType() {
+        TrainingType type = new TrainingType();
+        type.setTrainingTypeName("Fitness");
+        when(session.get(TrainingType.class, 1L)).thenReturn(type);
 
-        TrainingType created = trainingTypeDao.create(trainingType);
+        Optional<TrainingType> result = trainingTypeDao.findById(1L);
 
-        assertNotNull(created.getId());
-        assertEquals(1L, created.getId());
-        assertTrue(storage.containsKey(1L));
-        assertEquals("Cardio", storage.get(1L).getTrainingTypeName());
+        assertTrue(result.isPresent());
+        assertEquals("Fitness", result.get().getTrainingTypeName());
     }
 
     @Test
-    void create_IncrementIdForMultipleTrainingTypes() {
-        TrainingType type1 = new TrainingType();
-        type1.setTrainingTypeName("Cardio");
+    void findById_ReturnEmptyWhenNotFound() {
+        when(session.get(TrainingType.class, 99L)).thenReturn(null);
 
-        TrainingType type2 = new TrainingType();
-        type2.setTrainingTypeName("Strength");
-
-        TrainingType created1 = trainingTypeDao.create(type1);
-        TrainingType created2 = trainingTypeDao.create(type2);
-
-        assertEquals(1L, created1.getId());
-        assertEquals(2L, created2.getId());
-        assertEquals(2, storage.size());
+        assertFalse(trainingTypeDao.findById(99L).isPresent());
     }
 
     @Test
-    void findById_ReturnTrainingTypeWhenExists() {
-        TrainingType trainingType = new TrainingType();
-        trainingType.setId(1L);
-        trainingType.setTrainingTypeName("Cardio");
-        storage.put(1L, trainingType);
-
-        Optional<TrainingType> found = trainingTypeDao.findById(1L);
-
-        assertTrue(found.isPresent());
-        assertEquals("Cardio", found.get().getTrainingTypeName());
-    }
-
-    @Test
-    void findById_ReturnEmptyWhenNotExists() {
-        Optional<TrainingType> found = trainingTypeDao.findById(999L);
-
-        assertFalse(found.isPresent());
-    }
-
-    @Test
-    void findById_ThrowExceptionWhenIdIsNull() {
+    void findById_ThrowWhenIdIsNull() {
         assertThrows(IllegalArgumentException.class, () -> trainingTypeDao.findById(null));
+        verify(session, never()).get(any(Class.class), any());
     }
 
     @Test
-    void findByName_ReturnTrainingTypeWhenExists() {
-        TrainingType trainingType = new TrainingType();
-        trainingType.setId(1L);
-        trainingType.setTrainingTypeName("Cardio");
-        storage.put(1L, trainingType);
+    void findByName_ReturnTrainingType() {
+        TrainingType type = new TrainingType();
+        type.setTrainingTypeName("Yoga");
+        when(session.createQuery(anyString(), eq(TrainingType.class))).thenReturn(query);
+        when(query.setParameter(anyString(), any())).thenReturn(query);
+        when(query.uniqueResultOptional()).thenReturn(Optional.of(type));
 
-        Optional<TrainingType> found = trainingTypeDao.findByName("Cardio");
+        Optional<TrainingType> result = trainingTypeDao.findByName("Yoga");
 
-        assertTrue(found.isPresent());
-        assertEquals("Cardio", found.get().getTrainingTypeName());
+        assertTrue(result.isPresent());
+        assertEquals("Yoga", result.get().getTrainingTypeName());
+        verify(query).setParameter(eq("n"), eq("Yoga"));
     }
 
     @Test
-    void findByName_ReturnEmptyWhenNotExists() {
-        Optional<TrainingType> found = trainingTypeDao.findByName("NonExistent");
+    void findByName_ReturnEmptyWhenNotFound() {
+        when(session.createQuery(anyString(), eq(TrainingType.class))).thenReturn(query);
+        when(query.setParameter(anyString(), any())).thenReturn(query);
+        when(query.uniqueResultOptional()).thenReturn(Optional.empty());
 
-        assertFalse(found.isPresent());
+        assertFalse(trainingTypeDao.findByName("Unknown").isPresent());
     }
 
     @Test
-    void findByName_ThrowExceptionWhenNameIsNull() {
+    void findByName_ThrowWhenNameIsNull() {
         assertThrows(IllegalArgumentException.class, () -> trainingTypeDao.findByName(null));
+        verify(session, never()).createQuery(anyString(), any(Class.class));
     }
 
     @Test
-    void findAll_ReturnAllTrainingTypes() {
-        TrainingType type1 = new TrainingType();
-        type1.setId(1L);
-        type1.setTrainingTypeName("Cardio");
+    void findAll_ReturnList() {
+        List<TrainingType> types = List.of(new TrainingType(), new TrainingType(), new TrainingType());
+        when(session.createQuery(anyString(), eq(TrainingType.class))).thenReturn(query);
+        when(query.list()).thenReturn(types);
 
-        TrainingType type2 = new TrainingType();
-        type2.setId(2L);
-        type2.setTrainingTypeName("Strength");
-
-        storage.put(1L, type1);
-        storage.put(2L, type2);
-
-        List<TrainingType> all = trainingTypeDao.findAll();
-
-        assertEquals(2, all.size());
-    }
-
-    @Test
-    void findAll_ReturnEmptyListWhenNoTrainingTypes() {
-        List<TrainingType> all = trainingTypeDao.findAll();
-
-        assertTrue(all.isEmpty());
+        assertEquals(3, trainingTypeDao.findAll().size());
     }
 }

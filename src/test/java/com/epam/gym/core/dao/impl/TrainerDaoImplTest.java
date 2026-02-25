@@ -1,154 +1,195 @@
 package com.epam.gym.core.dao.impl;
 
-import java.util.NoSuchElementException;
 import com.epam.gym.core.model.Trainer;
+import com.epam.gym.core.model.Training;
+import com.epam.gym.core.model.TrainingType;
+import com.epam.gym.core.model.User;
+import org.hibernate.Session;
+import org.hibernate.SessionFactory;
+import org.hibernate.query.Query;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.HashMap;
+import java.time.LocalDate;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
+@ExtendWith(MockitoExtension.class)
 class TrainerDaoImplTest {
 
+    @Mock
+    private SessionFactory sessionFactory;
+
+    @Mock
+    private Session session;
+
+    @Mock
+    private Query<Trainer> trainerQuery;
+
+    @Mock
+    private Query<Training> trainingQuery;
+
+    @Mock
+    private Query<String> stringQuery;
+
+    @InjectMocks
     private TrainerDaoImpl trainerDao;
-    private Map<Long, Trainer> storage;
 
     @BeforeEach
     void setUp() {
-        storage = new HashMap<>();
-        trainerDao = new TrainerDaoImpl();
-        trainerDao.setStorage(storage);
+        lenient().when(sessionFactory.getCurrentSession()).thenReturn(session);
+    }
+
+    private Trainer trainerWithUser(String username) {
+        User user = User.builder().username(username).firstName("John").lastName("Smith")
+                .password("pass").isActive(true).build();
+        TrainingType type = new TrainingType();
+        type.setTrainingTypeName("Fitness");
+        return Trainer.builder().user(user).specialization(type).build();
     }
 
     @Test
-    void create_GenerateIdAndStoreTrainer() {
-        Trainer trainer = new Trainer();
-        trainer.setFirstName("John");
-        trainer.setLastName("Doe");
+    void create_PersistAndReturnTrainer() {
+        Trainer trainer = trainerWithUser("John.Smith");
+        doNothing().when(session).persist(trainer);
 
-        Trainer created = trainerDao.create(trainer);
+        Trainer result = trainerDao.create(trainer);
 
-        assertNotNull(created.getId());
-        assertEquals(1L, created.getId());
-        assertTrue(storage.containsKey(1L));
-        assertEquals("John", storage.get(1L).getFirstName());
+        verify(session).persist(trainer);
+        assertEquals(trainer, result);
     }
 
     @Test
-    void create_IncrementIdForMultipleTrainers() {
-        Trainer trainer1 = new Trainer();
-        trainer1.setFirstName("John");
+    void findById_ReturnTrainer() {
+        Trainer trainer = trainerWithUser("John.Smith");
+        when(session.get(Trainer.class, 1L)).thenReturn(trainer);
 
-        Trainer trainer2 = new Trainer();
-        trainer2.setFirstName("Jane");
+        Optional<Trainer> result = trainerDao.findById(1L);
 
-        Trainer created1 = trainerDao.create(trainer1);
-        Trainer created2 = trainerDao.create(trainer2);
-
-        assertEquals(1L, created1.getId());
-        assertEquals(2L, created2.getId());
-        assertEquals(2, storage.size());
+        assertTrue(result.isPresent());
+        assertEquals(trainer, result.get());
     }
 
     @Test
-    void findById_ReturnTrainerWhenExists() {
-        Trainer trainer = new Trainer();
-        trainer.setId(1L);
-        trainer.setFirstName("John");
-        storage.put(1L, trainer);
+    void findById_ReturnEmptyWhenNotFound() {
+        when(session.get(Trainer.class, 99L)).thenReturn(null);
 
-        Optional<Trainer> found = trainerDao.findById(1L);
-
-        assertTrue(found.isPresent());
-        assertEquals("John", found.get().getFirstName());
+        assertFalse(trainerDao.findById(99L).isPresent());
     }
 
     @Test
-    void findById_ReturnEmptyWhenNotExists() {
-        Optional<Trainer> found = trainerDao.findById(999L);
-
-        assertFalse(found.isPresent());
-    }
-
-    @Test
-    void findById_ThrowExceptionWhenIdIsNull() {
+    void findById_ThrowWhenIdIsNull() {
         assertThrows(IllegalArgumentException.class, () -> trainerDao.findById(null));
+        verify(session, never()).get(any(Class.class), any());
     }
 
     @Test
-    void findByUsername_ReturnTrainerWhenExists() {
-        Trainer trainer = new Trainer();
-        trainer.setId(1L);
-        trainer.setUsername("John.Doe");
-        storage.put(1L, trainer);
+    void findByUsername_ReturnTrainer() {
+        Trainer trainer = trainerWithUser("John.Smith");
+        when(session.createQuery(anyString(), eq(Trainer.class))).thenReturn(trainerQuery);
+        when(trainerQuery.setParameter(anyString(), any())).thenReturn(trainerQuery);
+        when(trainerQuery.uniqueResultOptional()).thenReturn(Optional.of(trainer));
 
-        Optional<Trainer> found = trainerDao.findByUsername("John.Doe");
+        Optional<Trainer> result = trainerDao.findByUsername("John.Smith");
 
-        assertTrue(found.isPresent());
-        assertEquals("John.Doe", found.get().getUsername());
+        assertTrue(result.isPresent());
+        assertEquals("John.Smith", result.get().getUser().getUsername());
     }
 
     @Test
-    void findByUsername_ReturnEmptyWhenNotExists() {
-        Optional<Trainer> found = trainerDao.findByUsername("nonexistent");
+    void findByUsername_ReturnEmptyWhenNotFound() {
+        when(session.createQuery(anyString(), eq(Trainer.class))).thenReturn(trainerQuery);
+        when(trainerQuery.setParameter(anyString(), any())).thenReturn(trainerQuery);
+        when(trainerQuery.uniqueResultOptional()).thenReturn(Optional.empty());
 
-        assertFalse(found.isPresent());
+        assertFalse(trainerDao.findByUsername("unknown").isPresent());
     }
 
     @Test
-    void findByUsername_ThrowExceptionWhenUsernameIsNull() {
+    void findByUsername_ThrowWhenUsernameIsNull() {
         assertThrows(IllegalArgumentException.class, () -> trainerDao.findByUsername(null));
+        verify(session, never()).createQuery(anyString(), any(Class.class));
     }
 
     @Test
-    void findAll_ReturnAllTrainers() {
-        Trainer trainer1 = new Trainer();
-        trainer1.setId(1L);
-        trainer1.setFirstName("John");
+    void findAll_ReturnList() {
+        List<Trainer> trainers = List.of(trainerWithUser("A"), trainerWithUser("B"));
+        when(session.createQuery(anyString(), eq(Trainer.class))).thenReturn(trainerQuery);
+        when(trainerQuery.list()).thenReturn(trainers);
 
-        Trainer trainer2 = new Trainer();
-        trainer2.setId(2L);
-        trainer2.setFirstName("Jane");
-
-        storage.put(1L, trainer1);
-        storage.put(2L, trainer2);
-
-        List<Trainer> all = trainerDao.findAll();
-
-        assertEquals(2, all.size());
+        assertEquals(2, trainerDao.findAll().size());
     }
 
     @Test
-    void findAll_ReturnEmptyListWhenNoTrainers() {
-        List<Trainer> all = trainerDao.findAll();
+    void update_ReturnMergedTrainer() {
+        Trainer trainer = trainerWithUser("John.Smith");
+        when(session.merge(trainer)).thenReturn(trainer);
 
-        assertTrue(all.isEmpty());
+        Trainer result = trainerDao.update(trainer);
+
+        verify(session).merge(trainer);
+        assertEquals(trainer, result);
     }
 
     @Test
-    void update_UpdateExistingTrainer() {
-        Trainer trainer = new Trainer();
-        trainer.setId(1L);
-        trainer.setFirstName("John");
-        storage.put(1L, trainer);
+    void findNotAssignedTrainers_ReturnList() {
+        List<Trainer> trainers = List.of(trainerWithUser("Jane.Doe"));
+        when(session.createQuery(anyString(), eq(Trainer.class))).thenReturn(trainerQuery);
+        when(trainerQuery.setParameter(anyString(), any())).thenReturn(trainerQuery);
+        when(trainerQuery.list()).thenReturn(trainers);
 
-        trainer.setFirstName("Jane");
-        Trainer updated = trainerDao.update(trainer);
+        List<Trainer> result = trainerDao.findNotAssignedTrainers("Alice.Johnson");
 
-        assertEquals("Jane", updated.getFirstName());
-        assertEquals("Jane", storage.get(1L).getFirstName());
+        assertEquals(1, result.size());
+        verify(trainerQuery).setParameter(eq("u"), eq("Alice.Johnson"));
     }
 
     @Test
-    void update_ThrowExceptionWhenTrainerNotFound() {
-        Trainer trainer = new Trainer();
-        trainer.setId(999L);
-        trainer.setFirstName("John");
+    void findTrainingsByCriteria_ApplyAllParameters() {
+        List<Training> trainings = List.of(new Training());
+        when(session.createQuery(anyString(), eq(Training.class))).thenReturn(trainingQuery);
+        when(trainingQuery.setParameter(anyString(), any())).thenReturn(trainingQuery);
+        when(trainingQuery.list()).thenReturn(trainings);
 
-        assertThrows(NoSuchElementException.class, () -> trainerDao.update(trainer));
+        List<Training> result = trainerDao.findTrainingsByCriteria(
+                "John.Smith", LocalDate.now(), LocalDate.now(), "Alice.Johnson");
+
+        assertEquals(1, result.size());
+        verify(trainingQuery, atLeastOnce()).setParameter(anyString(), any());
+    }
+
+    @Test
+    void findTrainingsByCriteria_WorkWithNullOptionalParams() {
+        List<Training> trainings = List.of(new Training());
+        when(session.createQuery(anyString(), eq(Training.class))).thenReturn(trainingQuery);
+        when(trainingQuery.setParameter(anyString(), any())).thenReturn(trainingQuery);
+        when(trainingQuery.list()).thenReturn(trainings);
+
+        List<Training> result = trainerDao.findTrainingsByCriteria(
+                "John.Smith", null, null, null);
+
+        assertEquals(1, result.size());
+    }
+
+    @Test
+    void findUsernamesByPrefix_ReturnList() {
+        List<String> usernames = List.of("John.Smith", "John.Smith1");
+        when(session.createQuery(anyString(), eq(String.class))).thenReturn(stringQuery);
+        when(stringQuery.setParameter(anyString(), any())).thenReturn(stringQuery);
+        when(stringQuery.list()).thenReturn(usernames);
+
+        List<String> result = trainerDao.findUsernamesByPrefix("John.Smith");
+
+        assertEquals(2, result.size());
+        verify(stringQuery).setParameter(eq("exact"), eq("John.Smith"));
+        verify(stringQuery).setParameter(eq("pattern"), eq("John.Smith%"));
     }
 }
