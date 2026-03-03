@@ -30,10 +30,10 @@
         <lombok.version>1.18.30</lombok.version>
 
         <hibernate.version>6.4.4.Final</hibernate.version>
-        <h2.version>2.2.224</h2.version>
 
         <maven-compiler-plugin.version>3.12.1</maven-compiler-plugin.version>
         <maven-surefire-plugin.version>3.2.3</maven-surefire-plugin.version>
+        <exec-maven-plugin.version>3.1.0</exec-maven-plugin.version>
     </properties>
 
     <dependencies>
@@ -76,11 +76,20 @@
             <version>${spring.version}</version>
         </dependency>
 
-        <!-- H2 in-memory database -->
+        <!-- Spring Data JPA -->
         <dependency>
-            <groupId>com.h2database</groupId>
-            <artifactId>h2</artifactId>
-            <version>${h2.version}</version>
+            <groupId>org.springframework.data</groupId>
+            <artifactId>spring-data-jpa</artifactId>
+            <version>3.2.2</version>
+        </dependency>
+
+
+
+        <!-- PostgreSQL driver -->
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <version>42.7.3</version>
             <scope>runtime</scope>
         </dependency>
 
@@ -171,6 +180,15 @@
                     <includes>
                         <include>**/*Test.java</include>
                     </includes>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>${exec-maven-plugin.version}</version>
+                <configuration>
+                    <mainClass>com.epam.gym.core.Main</mainClass>
                 </configuration>
             </plugin>
 

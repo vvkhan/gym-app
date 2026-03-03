@@ -1,84 +1,68 @@
 package com.epam.gym.core.service;
 
-import com.epam.gym.core.dao.TraineeDao;
-import com.epam.gym.core.dao.TrainerDao;
-import com.epam.gym.core.dao.TrainingDao;
-import com.epam.gym.core.dao.TrainingTypeDao;
-import java.util.NoSuchElementException;
 import com.epam.gym.core.model.Trainee;
 import com.epam.gym.core.model.Trainer;
 import com.epam.gym.core.model.Training;
 import com.epam.gym.core.model.TrainingType;
+import com.epam.gym.core.repository.TraineeRepository;
+import com.epam.gym.core.repository.TrainerRepository;
+import com.epam.gym.core.repository.TrainingRepository;
+import com.epam.gym.core.repository.TrainingTypeRepository;
 import com.epam.gym.core.aspect.LogExecution;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
-import java.util.Collections;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Optional;
+import java.util.UUID;
 
 @LogExecution
 @Service
 public class TrainingService {
 
     @Autowired
-    private TrainingDao trainingDao;
+    private TrainingRepository trainingRepository;
 
     @Autowired
-    private TraineeDao traineeDao;
+    private TraineeRepository traineeRepository;
 
     @Autowired
-    private TrainerDao trainerDao;
+    private TrainerRepository trainerRepository;
 
     @Autowired
-    private TrainingTypeDao trainingTypeDao;
+    private TrainingTypeRepository trainingTypeRepository;
 
     @Transactional
-    public Training createTraining(Long traineeId, Long trainerId, String trainingName,
-                                   Long trainingTypeId, LocalDate trainingDate, Integer duration) {
-        Trainee trainee = traineeDao.findById(traineeId)
+    public Training createTraining(UUID traineeId, UUID trainerId, String trainingName,
+                                   UUID trainingTypeId, LocalDate trainingDate, Integer duration) {
+        Trainee trainee = traineeRepository.findById(traineeId)
                 .orElseThrow(() -> new NoSuchElementException("Trainee with id " + traineeId + " not found"));
-        Trainer trainer = trainerDao.findById(trainerId)
+        Trainer trainer = trainerRepository.findById(trainerId)
                 .orElseThrow(() -> new NoSuchElementException("Trainer with id " + trainerId + " not found"));
-        TrainingType trainingType = trainingTypeDao.findById(trainingTypeId)
+        TrainingType trainingType = trainingTypeRepository.findById(trainingTypeId)
                 .orElseThrow(() -> new NoSuchElementException("TrainingType with id " + trainingTypeId + " not found"));
-        return trainingDao.create(buildTraining(trainee, trainer, trainingName, trainingType, trainingDate, duration));
+        return trainingRepository.save(buildTraining(trainee, trainer, trainingName, trainingType, trainingDate, duration));
     }
 
     @Transactional(readOnly = true)
-    public Optional<Training> getTrainingById(Long id) {
+    public Optional<Training> getTrainingById(UUID id) {
         if (id == null) {
             return Optional.empty();
         }
-        return trainingDao.findById(id);
+        return trainingRepository.findById(id);
     }
 
     @Transactional(readOnly = true)
     public List<Training> getAllTrainings() {
-        return trainingDao.findAll();
-    }
-
-    @Transactional(readOnly = true)
-    public List<Training> getTrainingsByTrainee(Long traineeId) {
-        if (traineeId == null) {
-            return Collections.emptyList();
-        }
-        return trainingDao.findByTraineeId(traineeId);
-    }
-
-    @Transactional(readOnly = true)
-    public List<Training> getTrainingsByTrainer(Long trainerId) {
-        if (trainerId == null) {
-            return Collections.emptyList();
-        }
-        return trainingDao.findByTrainerId(trainerId);
+        return trainingRepository.findAll();
     }
 
     @Transactional(readOnly = true)
     public List<TrainingType> getAllTrainingTypes() {
-        return trainingTypeDao.findAll();
+        return trainingTypeRepository.findAll();
     }
 
     // Helper
