@@ -17,20 +17,20 @@ CREATE TABLE "user" (
 
 CREATE TABLE trainee (
     id            UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id       UUID         NOT NULL UNIQUE REFERENCES "user"(id) ON DELETE CASCADE,
+    user_id       UUID         NOT NULL UNIQUE REFERENCES "user"(id),
     date_of_birth DATE,
     address       VARCHAR(255)
 );
 
 CREATE TABLE trainer (
     id                UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id           UUID NOT NULL UNIQUE REFERENCES "user"(id)        ON DELETE CASCADE,
+    user_id           UUID NOT NULL UNIQUE REFERENCES "user"(id),
     specialization_id UUID NOT NULL        REFERENCES training_type(id) ON DELETE RESTRICT
 );
 
 CREATE TABLE training (
     id                UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
-    trainee_id        UUID         NOT NULL REFERENCES trainee(id)       ON DELETE CASCADE,
+    trainee_id        UUID         NOT NULL REFERENCES trainee(id),
     trainer_id        UUID         NOT NULL REFERENCES trainer(id)       ON DELETE RESTRICT,
     training_type_id  UUID         NOT NULL REFERENCES training_type(id) ON DELETE RESTRICT,
     training_name     VARCHAR(128) NOT NULL,
@@ -39,7 +39,7 @@ CREATE TABLE training (
 );
 
 CREATE TABLE trainee2trainer (
-    trainee_id UUID NOT NULL REFERENCES trainee(id) ON DELETE CASCADE,
-    trainer_id UUID NOT NULL REFERENCES trainer(id) ON DELETE CASCADE,
+    trainee_id UUID NOT NULL REFERENCES trainee(id),
+    trainer_id UUID NOT NULL REFERENCES trainer(id),
     PRIMARY KEY (trainee_id, trainer_id)
 );

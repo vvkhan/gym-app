@@ -17,9 +17,11 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -51,7 +53,10 @@ class TraineeServiceTest {
                 .firstName("John").lastName("Doe")
                 .username(username).password(password).isActive(isActive)
                 .build();
-        return Trainee.builder().user(user).dateOfBirth(LocalDate.of(1990, 1, 1)).build();
+        Trainee trainee = new Trainee();
+        trainee.setUser(user);
+        trainee.setDateOfBirth(LocalDate.of(1990, 1, 1));
+        return trainee;
     }
 
     @Test
@@ -215,20 +220,22 @@ class TraineeServiceTest {
     @Test
     void updateTrainers_UpdateTrainersList() {
         Trainee trainee = traineeWithUser("John.Doe", "pass", true);
-        Trainer trainer = Trainer.builder()
-                .user(User.builder().username("Jane.Smith").password("p").isActive(true)
-                        .firstName("Jane").lastName("Smith").build())
-                .build();
+        trainee.setTrainers(new ArrayList<>());
+        User trainerUser = User.builder()
+                .username("Jane.Smith").password("p").isActive(true)
+                .firstName("Jane").lastName("Smith").build();
+        Trainer trainer = new Trainer();
+        trainer.setUser(trainerUser);
 
         when(traineeRepository.findByUserUsername("John.Doe")).thenReturn(Optional.of(trainee));
-        when(trainerRepository.findByUserUsernameIn(List.of("Jane.Smith"))).thenReturn(List.of(trainer));
+        when(trainerRepository.findByUserUsernameIn(Set.of("Jane.Smith"))).thenReturn(List.of(trainer));
         when(traineeRepository.save(trainee)).thenReturn(trainee);
 
-        Trainee result = traineeService.updateTrainers("John.Doe", List.of("Jane.Smith"));
+        Trainee result = traineeService.updateTrainers("John.Doe", Set.of("Jane.Smith"));
 
         assertEquals(1, result.getTrainers().size());
         assertEquals("Jane.Smith", result.getTrainers().get(0).getUser().getUsername());
-        verify(trainerRepository).findByUserUsernameIn(List.of("Jane.Smith"));
+        verify(trainerRepository).findByUserUsernameIn(Set.of("Jane.Smith"));
         verify(traineeRepository).save(trainee);
     }
 
@@ -236,10 +243,10 @@ class TraineeServiceTest {
     void updateTrainers_ThrowWhenTrainerNotFound() {
         Trainee trainee = traineeWithUser("John.Doe", "pass", true);
         when(traineeRepository.findByUserUsername("John.Doe")).thenReturn(Optional.of(trainee));
-        when(trainerRepository.findByUserUsernameIn(List.of("unknown"))).thenReturn(List.of());
+        when(trainerRepository.findByUserUsernameIn(Set.of("unknown"))).thenReturn(List.of());
 
         assertThrows(NoSuchElementException.class, () ->
-                traineeService.updateTrainers("John.Doe", List.of("unknown")));
+                traineeService.updateTrainers("John.Doe", Set.of("unknown")));
         verify(traineeRepository, never()).save(any());
     }
 

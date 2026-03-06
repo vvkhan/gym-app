@@ -14,6 +14,7 @@ import org.springframework.stereotype.Component;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 @LogExecution
@@ -99,7 +100,7 @@ public class GymFacade {
     }
 
     public Trainee updateTraineeTrainers(String traineeUsername, String password,
-                                         List<String> trainerUsernames) {
+                                         Set<String> trainerUsernames) {
         requireTraineeAuth(traineeUsername, password);
         return traineeService.updateTrainers(traineeUsername, trainerUsernames);
     }

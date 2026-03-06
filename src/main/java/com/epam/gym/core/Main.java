@@ -10,6 +10,7 @@ import org.springframework.context.annotation.AnnotationConfigApplicationContext
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 public class Main {
@@ -194,7 +195,7 @@ public class Main {
         // 18. Update Trainee's trainers list
         section("18. Update Trainee's trainers list");
         Trainee alice = facade.updateTraineeTrainers(
-                ALICE_USERNAME, ALICE_PASSWORD, List.of(trainerUsername, JOHN_USERNAME));
+                ALICE_USERNAME, ALICE_PASSWORD, Set.of(trainerUsername, JOHN_USERNAME));
         print("Updated trainers list for " + ALICE_USERNAME + ":");
         alice.getTrainers().forEach(t -> print("  " + t.getUser().getUsername()
                 + " | " + t.getSpecialization().getTrainingTypeName()));

@@ -12,15 +12,15 @@ import java.util.UUID;
 
 public interface TraineeRepository extends JpaRepository<Trainee, UUID> {
 
-    @EntityGraph(attributePaths = {"user", "trainers.user", "trainers.specialization"})
+    @EntityGraph(Trainee.FULL_GRAPH)
     Optional<Trainee> findByUserUsername(String username);
 
     @Override
-    @EntityGraph(attributePaths = {"user", "trainers.user", "trainers.specialization"})
+    @EntityGraph(Trainee.FULL_GRAPH)
     Optional<Trainee> findById(UUID id);
 
     @Override
-    @EntityGraph(attributePaths = {"user", "trainers.user", "trainers.specialization"})
+    @EntityGraph(Trainee.FULL_GRAPH)
     List<Trainee> findAll();
 
     boolean existsByUserId(UUID userId);

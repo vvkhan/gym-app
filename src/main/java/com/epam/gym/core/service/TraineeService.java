@@ -9,7 +9,6 @@ import com.epam.gym.core.repository.TrainerRepository;
 import com.epam.gym.core.repository.TrainerSpecification;
 import com.epam.gym.core.repository.TrainingRepository;
 import com.epam.gym.core.repository.TrainingSpecification;
-import com.epam.gym.core.repository.UserRepository;
 import com.epam.gym.core.util.PasswordGenerator;
 import com.epam.gym.core.util.UsernameGenerator;
 import com.epam.gym.core.aspect.LogExecution;
@@ -21,7 +20,9 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @LogExecution
 @Service
@@ -35,9 +36,6 @@ public class TraineeService {
 
     @Autowired
     private TrainingRepository trainingRepository;
-
-    @Autowired
-    private UserRepository userRepository;
 
     private UsernameGenerator usernameGenerator;
     private PasswordGenerator passwordGenerator;
@@ -62,11 +60,12 @@ public class TraineeService {
                                  LocalDate dateOfBirth, String address, Boolean isActive) {
         Trainee existing = traineeRepository.findByUserUsername(username)
                 .orElseThrow(() -> new NoSuchElementException("Trainee not found: " + username));
-        existing.getUser().setFirstName(firstName);
-        existing.getUser().setLastName(lastName);
+        User user = existing.getUser();
+        user.setFirstName(firstName);
+        user.setLastName(lastName);
         existing.setDateOfBirth(dateOfBirth);
         existing.setAddress(address);
-        existing.getUser().setIsActive(isActive);
+        user.setIsActive(isActive);
         return traineeRepository.save(existing);
     }
 
@@ -74,13 +73,7 @@ public class TraineeService {
     public void deleteTrainee(String username) {
         Trainee trainee = traineeRepository.findByUserUsername(username)
                 .orElseThrow(() -> new NoSuchElementException("Trainee not found: " + username));
-        UUID userId = trainee.getUser().getId();
         traineeRepository.delete(trainee);
-        traineeRepository.flush();
-
-        if (!traineeRepository.existsByUserId(userId) && !trainerRepository.existsByUserId(userId)) {
-            userRepository.deleteById(userId);
-        }
     }
 
     @Transactional(readOnly = true)
@@ -160,23 +153,33 @@ public class TraineeService {
     }
 
     @Transactional
-    public Trainee updateTrainers(String traineeUsername, List<String> trainerUsernames) {
+    public Trainee updateTrainers(String traineeUsername, Set<String> trainerUsernames) {
         Trainee trainee = traineeRepository.findByUserUsername(traineeUsername)
                 .orElseThrow(() -> new NoSuchElementException("Trainee not found: " + traineeUsername));
         List<Trainer> newTrainers = trainerRepository.findByUserUsernameIn(trainerUsernames);
-        trainerUsernames.stream()
-                .filter(u -> newTrainers.stream().noneMatch(t -> t.getUser().getUsername().equals(u)))
-                .findFirst()
-                .ifPresent(u -> { throw new NoSuchElementException("Trainer not found: " + u); });
+        if (trainerUsernames.size() != newTrainers.size()) {
+            throw new NoSuchElementException("Trainers not found: " + getUnknownNames(trainerUsernames, newTrainers));
+        }
         trainee.getTrainers().removeIf(t -> !trainerUsernames.contains(t.getUser().getUsername()));
-        newTrainers.stream()
-                .filter(t -> trainee.getTrainers().stream()
-                        .noneMatch(e -> e.getUser().getUsername().equals(t.getUser().getUsername())))
-                .forEach(trainee.getTrainers()::add);
+        Set<String> currentUsernames = trainee.getTrainers().stream()
+                .map(t -> t.getUser().getUsername())
+                .collect(Collectors.toSet());
+        trainee.getTrainers().addAll(newTrainers.stream()
+                .filter(t -> !currentUsernames.contains(t.getUser().getUsername()))
+                .toList());
         return traineeRepository.save(trainee);
     }
 
-    // Helper
+    // Helpers
+
+    private List<String> getUnknownNames(Set<String> trainerUsernames, List<Trainer> foundTrainers) {
+        Set<String> foundUsernames = foundTrainers.stream()
+                .map(t -> t.getUser().getUsername())
+                .collect(Collectors.toSet());
+        return trainerUsernames.stream()
+                .filter(u -> !foundUsernames.contains(u))
+                .toList();
+    }
 
     private Trainee buildTraineeForCreate(String firstName, String lastName,
                                           LocalDate dateOfBirth, String address) {
@@ -187,10 +190,10 @@ public class TraineeService {
                 .password(passwordGenerator.generatePassword())
                 .isActive(true)
                 .build();
-        return Trainee.builder()
-                .user(user)
-                .dateOfBirth(dateOfBirth)
-                .address(address)
-                .build();
+        Trainee trainee = new Trainee();
+        trainee.setUser(user);
+        trainee.setDateOfBirth(dateOfBirth);
+        trainee.setAddress(address);
+        return trainee;
     }
 }
