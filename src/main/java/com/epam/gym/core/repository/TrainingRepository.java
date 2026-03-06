@@ -14,20 +14,20 @@ public interface TrainingRepository extends JpaRepository<Training, UUID>,
                                              JpaSpecificationExecutor<Training> {
 
     @Override
-    @EntityGraph(attributePaths = {"trainee.user", "trainer.user", "trainer.specialization", "trainingType"})
+    @EntityGraph(Training.FULL_GRAPH)
     Optional<Training> findById(UUID id);
 
     @Override
-    @EntityGraph(attributePaths = {"trainee.user", "trainer.user", "trainer.specialization", "trainingType"})
+    @EntityGraph(Training.FULL_GRAPH)
     List<Training> findAll();
 
     @Override
-    @EntityGraph(attributePaths = {"trainee.user", "trainer.user", "trainer.specialization", "trainingType"})
+    @EntityGraph(Training.FULL_GRAPH)
     List<Training> findAll(Specification<Training> spec);
 
-    @EntityGraph(attributePaths = {"trainee.user", "trainer.user", "trainer.specialization", "trainingType"})
+    @EntityGraph(Training.FULL_GRAPH)
     List<Training> findByTraineeId(UUID traineeId);
 
-    @EntityGraph(attributePaths = {"trainee.user", "trainer.user", "trainer.specialization", "trainingType"})
+    @EntityGraph(Training.FULL_GRAPH)
     List<Training> findByTrainerId(UUID trainerId);
 }

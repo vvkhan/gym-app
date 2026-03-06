@@ -54,7 +54,10 @@ class TrainerServiceTest {
                 .build();
         TrainingType type = new TrainingType();
         type.setTrainingTypeName("Fitness");
-        return Trainer.builder().user(user).specialization(type).build();
+        Trainer trainer = new Trainer();
+        trainer.setUser(user);
+        trainer.setSpecialization(type);
+        return trainer;
     }
 
     private TrainingType trainingType(UUID id, String name) {

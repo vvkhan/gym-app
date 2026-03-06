@@ -10,9 +10,6 @@ import lombok.Setter;
 
 import java.util.UUID;
 
-/**
- * Abstract class for all users types
- */
 @Getter
 @Setter
 @NoArgsConstructor
@@ -46,9 +43,9 @@ public class User {
     @Column(name = "is_active", nullable = false)
     private Boolean isActive;
 
-    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
     private Trainee trainee;
 
-    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
     private Trainer trainer;
 }

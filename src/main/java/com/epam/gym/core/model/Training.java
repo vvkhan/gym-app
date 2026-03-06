@@ -17,10 +17,27 @@ import java.util.UUID;
 @AllArgsConstructor
 @Builder
 @ToString(onlyExplicitlyIncluded = true)
+@NamedEntityGraph(
+    name = Training.FULL_GRAPH,
+    attributeNodes = {
+        @NamedAttributeNode(value = "trainee", subgraph = "trainee"),
+        @NamedAttributeNode(value = "trainer", subgraph = "trainer"),
+        @NamedAttributeNode("trainingType")
+    },
+    subgraphs = {
+        @NamedSubgraph(name = "trainee", attributeNodes = @NamedAttributeNode("user")),
+        @NamedSubgraph(name = "trainer", attributeNodes = {
+            @NamedAttributeNode("user"),
+            @NamedAttributeNode("specialization")
+        })
+    }
+)
 @Entity
 @Table(name = "training")
 
 public class Training {
+
+    public static final String FULL_GRAPH = "Training.full";
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)

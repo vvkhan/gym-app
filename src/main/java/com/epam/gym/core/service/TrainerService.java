@@ -61,10 +61,11 @@ public class TrainerService {
                 .orElseThrow(() -> new NoSuchElementException("TrainingType with id " + trainingTypeId + " not found"));
         Trainer existing = trainerRepository.findByUserUsername(username)
                 .orElseThrow(() -> new NoSuchElementException("Trainer not found: " + username));
-        existing.getUser().setFirstName(firstName);
-        existing.getUser().setLastName(lastName);
+        User user = existing.getUser();
+        user.setFirstName(firstName);
+        user.setLastName(lastName);
         existing.setSpecialization(trainingType);
-        existing.getUser().setIsActive(isActive);
+        user.setIsActive(isActive);
         return trainerRepository.save(existing);
     }
 
@@ -149,9 +150,9 @@ public class TrainerService {
                 .password(passwordGenerator.generatePassword())
                 .isActive(true)
                 .build();
-        return Trainer.builder()
-                .user(user)
-                .specialization(trainingType)
-                .build();
+        Trainer trainer = new Trainer();
+        trainer.setUser(user);
+        trainer.setSpecialization(trainingType);
+        return trainer;
     }
 }

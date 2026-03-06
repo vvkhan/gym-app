@@ -16,22 +16,22 @@ import java.util.UUID;
 public interface TrainerRepository extends JpaRepository<Trainer, UUID>,
                                            JpaSpecificationExecutor<Trainer> {
 
-    @EntityGraph(attributePaths = {"user", "specialization"})
+    @EntityGraph(Trainer.FULL_GRAPH)
     Optional<Trainer> findByUserUsername(String username);
 
     @Override
-    @EntityGraph(attributePaths = {"user", "specialization"})
+    @EntityGraph(Trainer.FULL_GRAPH)
     Optional<Trainer> findById(UUID id);
 
     @Override
-    @EntityGraph(attributePaths = {"user", "specialization"})
+    @EntityGraph(Trainer.FULL_GRAPH)
     List<Trainer> findAll();
 
     @Override
-    @EntityGraph(attributePaths = {"user", "specialization"})
+    @EntityGraph(Trainer.FULL_GRAPH)
     List<Trainer> findAll(Specification<Trainer> spec);
 
-    @EntityGraph(attributePaths = {"user", "specialization"})
+    @EntityGraph(Trainer.FULL_GRAPH)
     List<Trainer> findByUserUsernameIn(Collection<String> usernames);
 
     boolean existsByUserId(UUID userId);
