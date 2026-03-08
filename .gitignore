@@ -31,6 +31,9 @@ bin/
 Thumbs.db
 desktop.ini
 
+# Sensitive configuration
+src/main/resources/application.properties
+
 # Logs
 *.log
 logs/

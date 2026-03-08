@@ -6,11 +6,11 @@
 
 **1. Hibernate Config added.**
 
-**2. H2 in-memory database utilised since there were no instruction to set up external database.**
+**2. External PostgreSQL DB running in Docker container utilized.**
 
 **3. User table added to model.**
 
-**4. DAO objects for each domain model (except User) entities implemented.**
+**4. Repository objects implemented. For queries, Spring Data JPA and Specifications used.**
 
 **5. Service and Facade reworked to meet functionality requirements.**
 
@@ -18,21 +18,24 @@
 
 `Jacoco` is utilized for evaluating tests coverage.
 - `util` - 100% coverage
-- `dao/impl` - 99% coverage
-- `service` - 83% coverage
+- `service` - 81% coverage
 
-Unit tests for `model` classes were not implemented since project Lombok was utilised for those classes and creating unit tests here would be redundant testing of Lombok work.
-Unit tests for `facade` class were not implemented since it does not add business logic.
+Unit tests for `model` and `facade` classes were not implemented since it does not add business logic.
 
 **7. Logging:**
 
 - Implemented with `Logback` and `SLF4J`
 - Logging layers set up in `/resources/logback.xml`
 - Spring `@Aspect` is used (check `LoggingAspect` class)
-- No sensitive data is included into logs (logs include only generated password's length and exclude; `@ToString.Exclude` used on the password field in User to suppress it from all Lombok-generated
-  `toString()` calls)
+- No sensitive data is included into logs (`sanitizeArgs` method was introduced in `LoggingAspect` class)
 
 **8. Username and Password calculation:**
 
 - Check `util/UsernameGeneratorImpl` (implements the relevant interface) - calculates Username by concatenation of first and last name with dot as a separator (adds serial number when necessary)
-- Check `util/PasswordGeneratorImpl` (implements the relevant interface) - generates Password as a random 10 chars lenth string. NOTE: password is not hashed for storing since Spring Security is covered only with future parts of the module.
+- Check `util/PasswordGeneratorImpl` (implements the relevant interface) - generates Password as a random 10 chars length string. NOTE: password is not hashed YET for storing since Spring Security is covered only with future parts of the module.
+
+**9. `Main` class introduced for demo purpose.**
+
+Run `mvn compile java:exec` to see the logs with SQL queries or refer to ***Log-with-SQL-queries.pdf*** file.
+
+**10. Use `.sql` scripts in *sql* folder to create database and populate it with toy data.**

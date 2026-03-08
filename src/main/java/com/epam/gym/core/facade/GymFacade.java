@@ -14,6 +14,8 @@ import org.springframework.stereotype.Component;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
 
 @LogExecution
 @Component
@@ -61,7 +63,6 @@ public class GymFacade {
     }
 
     public void changeTraineePassword(String username, String currentPassword, String newPassword) {
-        requireTraineeAuth(username, currentPassword);
         traineeService.changePassword(username, currentPassword, newPassword);
     }
 
@@ -71,11 +72,10 @@ public class GymFacade {
     }
 
     public void deactivateTrainee(String username, String password) {
-        requireTraineeAuth(username, password);
-        traineeService.deactivate(username);
+        traineeService.deactivate(username, password);
     }
 
-    public Optional<Trainee> getTrainee(Long id) {
+    public Optional<Trainee> getTrainee(UUID id) {
         return traineeService.getTraineeById(id);
     }
 
@@ -100,26 +100,25 @@ public class GymFacade {
     }
 
     public Trainee updateTraineeTrainers(String traineeUsername, String password,
-                                         List<String> trainerUsernames) {
+                                         Set<String> trainerUsernames) {
         requireTraineeAuth(traineeUsername, password);
         return traineeService.updateTrainers(traineeUsername, trainerUsernames);
     }
 
     // Trainer operations
 
-    public Trainer registerTrainer(String firstName, String lastName, Long trainingTypeId) {
+    public Trainer registerTrainer(String firstName, String lastName, UUID trainingTypeId) {
         return trainerService.createTrainer(firstName, lastName, trainingTypeId);
     }
 
     public Trainer updateTrainerProfile(String username, String password,
                                         String firstName, String lastName,
-                                        Long trainingTypeId, Boolean isActive) {
+                                        UUID trainingTypeId, Boolean isActive) {
         requireTrainerAuth(username, password);
         return trainerService.updateTrainer(username, firstName, lastName, trainingTypeId, isActive);
     }
 
     public void changeTrainerPassword(String username, String currentPassword, String newPassword) {
-        requireTrainerAuth(username, currentPassword);
         trainerService.changePassword(username, currentPassword, newPassword);
     }
 
@@ -129,11 +128,10 @@ public class GymFacade {
     }
 
     public void deactivateTrainer(String username, String password) {
-        requireTrainerAuth(username, password);
-        trainerService.deactivate(username);
+        trainerService.deactivate(username, password);
     }
 
-    public Optional<Trainer> getTrainer(Long id) {
+    public Optional<Trainer> getTrainer(UUID id) {
         return trainerService.getTrainerById(id);
     }
 
@@ -154,13 +152,13 @@ public class GymFacade {
 
     // Training operations
 
-    public Training createTraining(Long traineeId, Long trainerId, String trainingName,
-                                   Long trainingTypeId, LocalDate trainingDate, Integer duration) {
+    public Training createTraining(UUID traineeId, UUID trainerId, String trainingName,
+                                   UUID trainingTypeId, LocalDate trainingDate, Integer duration) {
         return trainingService.createTraining(traineeId, trainerId, trainingName,
                 trainingTypeId, trainingDate, duration);
     }
 
-    public Optional<Training> getTraining(Long id) {
+    public Optional<Training> getTraining(UUID id) {
         return trainingService.getTrainingById(id);
     }
 
