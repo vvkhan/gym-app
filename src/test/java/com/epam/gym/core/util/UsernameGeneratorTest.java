@@ -1,115 +1,94 @@
 package com.epam.gym.core.util;
 
-import com.epam.gym.core.model.Trainee;
-import com.epam.gym.core.model.Trainer;
-import org.junit.jupiter.api.BeforeEach;
+import com.epam.gym.core.repository.TraineeRepository;
+import com.epam.gym.core.repository.TrainerRepository;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
+@ExtendWith(MockitoExtension.class)
 class UsernameGeneratorTest {
 
+    @Mock
+    private TraineeRepository traineeRepository;
+
+    @Mock
+    private TrainerRepository trainerRepository;
+
+    @InjectMocks
     private UsernameGeneratorImpl usernameGenerator;
-    private Map<Long, Trainee> traineeStorage;
-    private Map<Long, Trainer> trainerStorage;
 
-    @BeforeEach
-    void setUp() {
-        traineeStorage = new HashMap<>();
-        trainerStorage = new HashMap<>();
-        usernameGenerator = new UsernameGeneratorImpl(traineeStorage, trainerStorage);
+    @Test
+    void generateUsername_ReturnBaseWhenNoConflicts() {
+        when(traineeRepository.findUsernamesByPrefix("John.Smith", "John.Smith%")).thenReturn(List.of());
+        when(trainerRepository.findUsernamesByPrefix("John.Smith", "John.Smith%")).thenReturn(List.of());
+
+        assertEquals("John.Smith", usernameGenerator.generateUsername("John", "Smith"));
     }
 
     @Test
-    void generateUsername_CreateBasicUsername() {
-        String username = usernameGenerator.generateUsername("John", "Smith");
-        assertEquals("John.Smith", username);
+    void generateUsername_AppendCounterWhenBaseConflictInTraineeStorage() {
+        when(traineeRepository.findUsernamesByPrefix("John.Smith", "John.Smith%")).thenReturn(List.of("John.Smith"));
+        when(trainerRepository.findUsernamesByPrefix("John.Smith", "John.Smith%")).thenReturn(List.of());
+
+        assertEquals("John.Smith1", usernameGenerator.generateUsername("John", "Smith"));
     }
 
     @Test
-    void generateUsername_HandleDuplicateInTraineeStorage() {
-        // create trainee with existing username
-        Trainee existingTrainee = new Trainee();
-        existingTrainee.setId(1L);
-        existingTrainee.setFirstName("John");
-        existingTrainee.setLastName("Smith");
-        existingTrainee.setUsername("John.Smith");
-        traineeStorage.put(1L, existingTrainee);
+    void generateUsername_AppendCounterWhenBaseConflictInTrainerStorage() {
+        when(traineeRepository.findUsernamesByPrefix("Jane.Doe", "Jane.Doe%")).thenReturn(List.of());
+        when(trainerRepository.findUsernamesByPrefix("Jane.Doe", "Jane.Doe%")).thenReturn(List.of("Jane.Doe"));
 
-        // generate username for new user with same name
-        String username = usernameGenerator.generateUsername("John", "Smith");
-
-        assertEquals("John.Smith1", username);
+        assertEquals("Jane.Doe1", usernameGenerator.generateUsername("Jane", "Doe"));
     }
 
     @Test
-    void generateUsername_HandleDuplicateInTrainerStorage() {
-        // create trainer with uexisting username
-        Trainer existingTrainer = new Trainer();
-        existingTrainer.setId(1L);
-        existingTrainer.setFirstName("Jane");
-        existingTrainer.setLastName("Doe");
-        existingTrainer.setUsername("Jane.Doe");
-        trainerStorage.put(1L, existingTrainer);
+    void generateUsername_FindNextAvailableWhenConflictsInBothStorages() {
+        when(traineeRepository.findUsernamesByPrefix("Alice.Johnson", "Alice.Johnson%")).thenReturn(List.of("Alice.Johnson"));
+        when(trainerRepository.findUsernamesByPrefix("Alice.Johnson", "Alice.Johnson%")).thenReturn(List.of("Alice.Johnson1"));
 
-        // generate username for new user with same name
-        String username = usernameGenerator.generateUsername("Jane", "Doe");
-
-        assertEquals("Jane.Doe1", username);
+        assertEquals("Alice.Johnson2", usernameGenerator.generateUsername("Alice", "Johnson"));
     }
 
     @Test
-    void generateUsername_HandleMultipleDuplicates() {
-        // create existing users
-        Trainee trainee1 = new Trainee();
-        trainee1.setUsername("Alice.Johnson");
-        traineeStorage.put(1L, trainee1);
+    void generateUsername_SkipAllTakenCounters() {
+        when(traineeRepository.findUsernamesByPrefix("Bob.Wilson", "Bob.Wilson%"))
+                .thenReturn(List.of("Bob.Wilson", "Bob.Wilson1", "Bob.Wilson2"));
+        when(trainerRepository.findUsernamesByPrefix("Bob.Wilson", "Bob.Wilson%")).thenReturn(List.of());
 
-        Trainer trainer1 = new Trainer();
-        trainer1.setUsername("Alice.Johnson1");
-        trainerStorage.put(2L, trainer1);
-
-        // generate username for 3rd user with same name
-        String username = usernameGenerator.generateUsername("Alice", "Johnson");
-
-        assertEquals("Alice.Johnson2", username);
+        assertEquals("Bob.Wilson3", usernameGenerator.generateUsername("Bob", "Wilson"));
     }
 
     @Test
-    void generateUsername_IncrementSerialNumberSequentially() {
-        // 1st call: no existing users
-        String username1 = usernameGenerator.generateUsername("Bob", "Wilson");
-        assertEquals("Bob.Wilson", username1);
+    void generateUsername_ReturnDifferentUsernamesForDifferentNames() {
+        when(traineeRepository.findUsernamesByPrefix("Michael.Brown", "Michael.Brown%")).thenReturn(List.of());
+        when(trainerRepository.findUsernamesByPrefix("Michael.Brown", "Michael.Brown%")).thenReturn(List.of());
+        when(traineeRepository.findUsernamesByPrefix("Sarah.Davis", "Sarah.Davis%")).thenReturn(List.of());
+        when(trainerRepository.findUsernamesByPrefix("Sarah.Davis", "Sarah.Davis%")).thenReturn(List.of());
 
-        // add 1st user to storage
-        Trainee trainee1 = new Trainee();
-        trainee1.setUsername(username1);
-        traineeStorage.put(1L, trainee1);
+        String u1 = usernameGenerator.generateUsername("Michael", "Brown");
+        String u2 = usernameGenerator.generateUsername("Sarah", "Davis");
 
-        // 2nd call: one existing user
-        String username2 = usernameGenerator.generateUsername("Bob", "Wilson");
-        assertEquals("Bob.Wilson1", username2);
-
-        // add 2nd user to storage
-        Trainee trainee2 = new Trainee();
-        trainee2.setUsername(username2);
-        traineeStorage.put(2L, trainee2);
-
-        // 3rd call: 2 existing users
-        String username3 = usernameGenerator.generateUsername("Bob", "Wilson");
-        assertEquals("Bob.Wilson2", username3);
+        assertEquals("Michael.Brown", u1);
+        assertEquals("Sarah.Davis", u2);
+        assertNotEquals(u1, u2);
     }
 
     @Test
-    void generateUsername_CheckDifferentNames() {
-        String username1 = usernameGenerator.generateUsername("Michael", "Brown");
-        String username2 = usernameGenerator.generateUsername("Sarah", "Davis");
+    void generateUsername_QueryBothRepositoriesWithSamePrefix() {
+        when(traineeRepository.findUsernamesByPrefix("John.Smith", "John.Smith%")).thenReturn(List.of());
+        when(trainerRepository.findUsernamesByPrefix("John.Smith", "John.Smith%")).thenReturn(List.of());
 
-        assertEquals("Michael.Brown", username1);
-        assertEquals("Sarah.Davis", username2);
-        assertNotEquals(username1, username2);
+        usernameGenerator.generateUsername("John", "Smith");
+
+        verify(traineeRepository).findUsernamesByPrefix("John.Smith", "John.Smith%");
+        verify(trainerRepository).findUsernamesByPrefix("John.Smith", "John.Smith%");
     }
 }

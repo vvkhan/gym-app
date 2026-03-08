@@ -1,28 +1,38 @@
 package com.epam.gym.core.service;
 
-import com.epam.gym.core.dao.TrainerDao;
-import com.epam.gym.core.dao.TrainingTypeDao;
-import java.util.NoSuchElementException;
 import com.epam.gym.core.model.Trainer;
+import com.epam.gym.core.model.Training;
 import com.epam.gym.core.model.TrainingType;
+import com.epam.gym.core.model.User;
+import com.epam.gym.core.repository.TrainerRepository;
+import com.epam.gym.core.repository.TrainingRepository;
+import com.epam.gym.core.repository.TrainingSpecification;
+import com.epam.gym.core.repository.TrainingTypeRepository;
 import com.epam.gym.core.util.PasswordGenerator;
 import com.epam.gym.core.util.UsernameGenerator;
 import com.epam.gym.core.aspect.LogExecution;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Optional;
+import java.util.UUID;
 
 @LogExecution
 @Service
 public class TrainerService {
 
     @Autowired
-    private TrainerDao trainerDao;
+    private TrainerRepository trainerRepository;
 
     @Autowired
-    private TrainingTypeDao trainingTypeDao;
+    private TrainingTypeRepository trainingTypeRepository;
+
+    @Autowired
+    private TrainingRepository trainingRepository;
 
     private UsernameGenerator usernameGenerator;
     private PasswordGenerator passwordGenerator;
@@ -37,58 +47,112 @@ public class TrainerService {
         this.passwordGenerator = passwordGenerator;
     }
 
-    public Trainer createTrainer(String firstName, String lastName, Long trainingTypeId) {
-        TrainingType trainingType = trainingTypeDao.findById(trainingTypeId)
+    @Transactional
+    public Trainer createTrainer(String firstName, String lastName, UUID trainingTypeId) {
+        TrainingType trainingType = trainingTypeRepository.findById(trainingTypeId)
                 .orElseThrow(() -> new NoSuchElementException("TrainingType with id " + trainingTypeId + " not found"));
-        return trainerDao.create(buildTrainerForCreate(firstName, lastName, trainingType));
+        return trainerRepository.save(buildTrainerForCreate(firstName, lastName, trainingType));
     }
 
-    public Trainer updateTrainer(Long id, String firstName, String lastName, Long trainingTypeId, Boolean isActive) {
-        if (id == null) {
-            throw new IllegalArgumentException("Id must not be null");
-        }
-        TrainingType trainingType = trainingTypeDao.findById(trainingTypeId)
+    @Transactional
+    public Trainer updateTrainer(String username, String firstName, String lastName,
+                                 UUID trainingTypeId, Boolean isActive) {
+        TrainingType trainingType = trainingTypeRepository.findById(trainingTypeId)
                 .orElseThrow(() -> new NoSuchElementException("TrainingType with id " + trainingTypeId + " not found"));
-        Trainer existing = trainerDao.findById(id)
-                .orElseThrow(() -> new NoSuchElementException("Trainer with id " + id + " not found"));
-        existing.setFirstName(firstName);
-        existing.setLastName(lastName);
+        Trainer existing = trainerRepository.findByUserUsername(username)
+                .orElseThrow(() -> new NoSuchElementException("Trainer not found: " + username));
+        User user = existing.getUser();
+        user.setFirstName(firstName);
+        user.setLastName(lastName);
         existing.setSpecialization(trainingType);
-        existing.setIsActive(isActive);
-        return trainerDao.update(existing);
+        user.setIsActive(isActive);
+        return trainerRepository.save(existing);
     }
 
-    public Optional<Trainer> getTrainerById(Long id) {
+    @Transactional(readOnly = true)
+    public Optional<Trainer> getTrainerById(UUID id) {
         if (id == null) {
             return Optional.empty();
         }
-        return trainerDao.findById(id);
+        return trainerRepository.findById(id);
     }
 
+    @Transactional(readOnly = true)
     public Optional<Trainer> getTrainerByUsername(String username) {
         if (username == null) {
             return Optional.empty();
         }
-        return trainerDao.findByUsername(username);
+        return trainerRepository.findByUserUsername(username);
     }
 
+    @Transactional(readOnly = true)
     public List<Trainer> getAllTrainers() {
-        return trainerDao.findAll();
+        return trainerRepository.findAll();
+    }
+
+    @Transactional(readOnly = true)
+    public boolean authenticate(String username, String password) {
+        return trainerRepository.findByUserUsername(username)
+                .map(t -> t.getUser().getPassword().equals(password))
+                .orElse(false);
+    }
+
+    @Transactional
+    public void changePassword(String username, String currentPassword, String newPassword) {
+        if (!authenticate(username, currentPassword)) {
+            throw new SecurityException("Authentication failed for user: " + username);
+        }
+        Trainer trainer = trainerRepository.findByUserUsername(username)
+                .orElseThrow(() -> new NoSuchElementException("Trainer not found: " + username));
+        trainer.getUser().setPassword(newPassword);
+        trainerRepository.save(trainer);
+    }
+
+    @Transactional
+    public void activate(String username) {
+        Trainer trainer = trainerRepository.findByUserUsername(username)
+                .orElseThrow(() -> new NoSuchElementException("Trainer not found: " + username));
+        if (Boolean.TRUE.equals(trainer.getUser().getIsActive())) {
+            throw new IllegalStateException("Trainer is already active: " + username);
+        }
+        trainer.getUser().setIsActive(true);
+        trainerRepository.save(trainer);
+    }
+
+    @Transactional
+    public void deactivate(String username, String password) {
+        if (!authenticate(username, password)) {
+            throw new SecurityException("Authentication failed for user: " + username);
+        }
+        Trainer trainer = trainerRepository.findByUserUsername(username)
+                .orElseThrow(() -> new NoSuchElementException("Trainer not found: " + username));
+        if (Boolean.FALSE.equals(trainer.getUser().getIsActive())) {
+            throw new IllegalStateException("Trainer is already inactive: " + username);
+        }
+        trainer.getUser().setIsActive(false);
+        trainerRepository.save(trainer);
+    }
+
+    @Transactional(readOnly = true)
+    public List<Training> getTrainings(String username, LocalDate fromDate, LocalDate toDate,
+                                       String traineeName) {
+        return trainingRepository.findAll(
+                TrainingSpecification.byTrainerCriteria(username, fromDate, toDate, traineeName));
     }
 
     // Helper
 
     private Trainer buildTrainerForCreate(String firstName, String lastName, TrainingType trainingType) {
-        String username = usernameGenerator.generateUsername(firstName, lastName);
-        String password = passwordGenerator.generatePassword();
-
-        return Trainer.builder()
+        User user = User.builder()
                 .firstName(firstName)
                 .lastName(lastName)
-                .username(username)
-                .password(password)
+                .username(usernameGenerator.generateUsername(firstName, lastName))
+                .password(passwordGenerator.generatePassword())
                 .isActive(true)
-                .specialization(trainingType)
                 .build();
+        Trainer trainer = new Trainer();
+        trainer.setUser(user);
+        trainer.setSpecialization(trainingType);
+        return trainer;
     }
 }
