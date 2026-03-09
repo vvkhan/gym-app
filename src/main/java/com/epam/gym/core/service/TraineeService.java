@@ -99,9 +99,7 @@ public class TraineeService {
 
     @Transactional(readOnly = true)
     public boolean authenticate(String username, String password) {
-        return traineeRepository.findByUserUsername(username)
-                .map(t -> t.getUser().getPassword().equals(password))
-                .orElse(false);
+        return traineeRepository.existsByUserUsernameAndUserPassword(username, password);
     }
 
     @Transactional
