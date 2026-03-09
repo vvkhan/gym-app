@@ -153,23 +153,21 @@ class TrainerServiceTest {
 
     @Test
     void authenticate_ReturnTrueWhenCredentialsMatch() {
-        Trainer trainer = trainerWithUser("John.Smith", "secret", true);
-        when(trainerRepository.findByUserUsername("John.Smith")).thenReturn(Optional.of(trainer));
+        when(trainerRepository.existsByUserUsernameAndUserPassword("John.Smith", "secret")).thenReturn(true);
 
         assertTrue(trainerService.authenticate("John.Smith", "secret"));
     }
 
     @Test
     void authenticate_ReturnFalseWhenPasswordWrong() {
-        Trainer trainer = trainerWithUser("John.Smith", "secret", true);
-        when(trainerRepository.findByUserUsername("John.Smith")).thenReturn(Optional.of(trainer));
+        when(trainerRepository.existsByUserUsernameAndUserPassword("John.Smith", "wrong")).thenReturn(false);
 
         assertFalse(trainerService.authenticate("John.Smith", "wrong"));
     }
 
     @Test
     void authenticate_ReturnFalseWhenUserNotFound() {
-        when(trainerRepository.findByUserUsername("unknown")).thenReturn(Optional.empty());
+        when(trainerRepository.existsByUserUsernameAndUserPassword("unknown", "any")).thenReturn(false);
 
         assertFalse(trainerService.authenticate("unknown", "any"));
     }
@@ -177,6 +175,7 @@ class TrainerServiceTest {
     @Test
     void changePassword_UpdatePassword() {
         Trainer trainer = trainerWithUser("John.Smith", "oldPass", true);
+        when(trainerRepository.existsByUserUsernameAndUserPassword("John.Smith", "oldPass")).thenReturn(true);
         when(trainerRepository.findByUserUsername("John.Smith")).thenReturn(Optional.of(trainer));
         when(trainerRepository.save(trainer)).thenReturn(trainer);
 
@@ -188,9 +187,6 @@ class TrainerServiceTest {
 
     @Test
     void changePassword_ThrowWhenCredentialsInvalid() {
-        Trainer trainer = trainerWithUser("John.Smith", "correct", true);
-        when(trainerRepository.findByUserUsername("John.Smith")).thenReturn(Optional.of(trainer));
-
         assertThrows(SecurityException.class, () ->
                 trainerService.changePassword("John.Smith", "wrong", "newPass"));
         verify(trainerRepository, never()).save(any());
@@ -220,6 +216,7 @@ class TrainerServiceTest {
     @Test
     void deactivate_SetIsActiveFalse() {
         Trainer trainer = trainerWithUser("John.Smith", "pass", true);
+        when(trainerRepository.existsByUserUsernameAndUserPassword("John.Smith", "pass")).thenReturn(true);
         when(trainerRepository.findByUserUsername("John.Smith")).thenReturn(Optional.of(trainer));
         when(trainerRepository.save(trainer)).thenReturn(trainer);
 
@@ -232,6 +229,7 @@ class TrainerServiceTest {
     @Test
     void deactivate_ThrowWhenAlreadyInactive() {
         Trainer trainer = trainerWithUser("John.Smith", "pass", false);
+        when(trainerRepository.existsByUserUsernameAndUserPassword("John.Smith", "pass")).thenReturn(true);
         when(trainerRepository.findByUserUsername("John.Smith")).thenReturn(Optional.of(trainer));
 
         assertThrows(IllegalStateException.class, () -> trainerService.deactivate("John.Smith", "pass"));
@@ -240,9 +238,6 @@ class TrainerServiceTest {
 
     @Test
     void deactivate_ThrowWhenCredentialsInvalid() {
-        Trainer trainer = trainerWithUser("John.Smith", "correct", true);
-        when(trainerRepository.findByUserUsername("John.Smith")).thenReturn(Optional.of(trainer));
-
         assertThrows(SecurityException.class, () -> trainerService.deactivate("John.Smith", "wrong"));
         verify(trainerRepository, never()).save(any());
     }

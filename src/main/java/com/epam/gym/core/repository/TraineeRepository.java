@@ -25,6 +25,8 @@ public interface TraineeRepository extends JpaRepository<Trainee, UUID> {
 
     boolean existsByUserId(UUID userId);
 
+    boolean existsByUserUsernameAndUserPassword(String username, String password);
+
     void deleteByUserUsername(String username);
 
     @Query("select t.user.username from Trainee t " +
