@@ -115,23 +115,21 @@ class TraineeServiceTest {
 
     @Test
     void authenticate_ReturnTrueWhenCredentialsMatch() {
-        Trainee trainee = traineeWithUser("John.Doe", "secret", true);
-        when(traineeRepository.findByUserUsername("John.Doe")).thenReturn(Optional.of(trainee));
+        when(traineeRepository.existsByUserUsernameAndUserPassword("John.Doe", "secret")).thenReturn(true);
 
         assertTrue(traineeService.authenticate("John.Doe", "secret"));
     }
 
     @Test
     void authenticate_ReturnFalseWhenPasswordWrong() {
-        Trainee trainee = traineeWithUser("John.Doe", "secret", true);
-        when(traineeRepository.findByUserUsername("John.Doe")).thenReturn(Optional.of(trainee));
+        when(traineeRepository.existsByUserUsernameAndUserPassword("John.Doe", "wrong")).thenReturn(false);
 
         assertFalse(traineeService.authenticate("John.Doe", "wrong"));
     }
 
     @Test
     void authenticate_ReturnFalseWhenUserNotFound() {
-        when(traineeRepository.findByUserUsername("unknown")).thenReturn(Optional.empty());
+        when(traineeRepository.existsByUserUsernameAndUserPassword("unknown", "any")).thenReturn(false);
 
         assertFalse(traineeService.authenticate("unknown", "any"));
     }
@@ -139,6 +137,7 @@ class TraineeServiceTest {
     @Test
     void changePassword_UpdatePassword() {
         Trainee trainee = traineeWithUser("John.Doe", "oldPass", true);
+        when(traineeRepository.existsByUserUsernameAndUserPassword("John.Doe", "oldPass")).thenReturn(true);
         when(traineeRepository.findByUserUsername("John.Doe")).thenReturn(Optional.of(trainee));
         when(traineeRepository.save(trainee)).thenReturn(trainee);
 
@@ -150,9 +149,6 @@ class TraineeServiceTest {
 
     @Test
     void changePassword_ThrowWhenCurrentPasswordIncorrect() {
-        Trainee trainee = traineeWithUser("John.Doe", "correct", true);
-        when(traineeRepository.findByUserUsername("John.Doe")).thenReturn(Optional.of(trainee));
-
         assertThrows(SecurityException.class, () ->
                 traineeService.changePassword("John.Doe", "wrong", "newPass"));
         verify(traineeRepository, never()).save(any());
@@ -160,8 +156,6 @@ class TraineeServiceTest {
 
     @Test
     void changePassword_ThrowWhenTraineeNotFound() {
-        when(traineeRepository.findByUserUsername("unknown")).thenReturn(Optional.empty());
-
         assertThrows(SecurityException.class, () ->
                 traineeService.changePassword("unknown", "pass", "newPass"));
     }
@@ -190,6 +184,7 @@ class TraineeServiceTest {
     @Test
     void deactivate_SetIsActiveFalse() {
         Trainee trainee = traineeWithUser("John.Doe", "pass", true);
+        when(traineeRepository.existsByUserUsernameAndUserPassword("John.Doe", "pass")).thenReturn(true);
         when(traineeRepository.findByUserUsername("John.Doe")).thenReturn(Optional.of(trainee));
         when(traineeRepository.save(trainee)).thenReturn(trainee);
 
@@ -202,6 +197,7 @@ class TraineeServiceTest {
     @Test
     void deactivate_ThrowWhenAlreadyInactive() {
         Trainee trainee = traineeWithUser("John.Doe", "pass", false);
+        when(traineeRepository.existsByUserUsernameAndUserPassword("John.Doe", "pass")).thenReturn(true);
         when(traineeRepository.findByUserUsername("John.Doe")).thenReturn(Optional.of(trainee));
 
         assertThrows(IllegalStateException.class, () -> traineeService.deactivate("John.Doe", "pass"));
@@ -210,9 +206,6 @@ class TraineeServiceTest {
 
     @Test
     void deactivate_ThrowWhenCredentialsInvalid() {
-        Trainee trainee = traineeWithUser("John.Doe", "correct", true);
-        when(traineeRepository.findByUserUsername("John.Doe")).thenReturn(Optional.of(trainee));
-
         assertThrows(SecurityException.class, () -> traineeService.deactivate("John.Doe", "wrong"));
         verify(traineeRepository, never()).save(any());
     }
