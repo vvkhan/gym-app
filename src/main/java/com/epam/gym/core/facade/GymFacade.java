@@ -1,19 +1,29 @@
 package com.epam.gym.core.facade;
 
+import com.epam.gym.core.aspect.LogExecution;
+import com.epam.gym.core.dto.response.RegistrationResponse;
+import com.epam.gym.core.dto.response.TraineeProfileResponse;
+import com.epam.gym.core.dto.response.TrainerProfileResponse;
+import com.epam.gym.core.dto.response.TrainerSummaryResponse;
+import com.epam.gym.core.dto.response.TrainingResponse;
+import com.epam.gym.core.dto.response.TrainingTypeResponse;
+import com.epam.gym.core.dto.response.UpdatedTraineeProfileResponse;
+import com.epam.gym.core.dto.response.UpdatedTrainerProfileResponse;
+import com.epam.gym.core.mapper.TraineeMapper;
+import com.epam.gym.core.mapper.TrainerMapper;
+import com.epam.gym.core.mapper.TrainerSummaryMapper;
+import com.epam.gym.core.mapper.TrainingMapper;
+import com.epam.gym.core.mapper.TrainingTypeMapper;
 import com.epam.gym.core.model.Trainee;
 import com.epam.gym.core.model.Trainer;
-import com.epam.gym.core.model.Training;
-import com.epam.gym.core.model.TrainingType;
-import com.epam.gym.core.aspect.LogExecution;
 import com.epam.gym.core.service.TraineeService;
 import com.epam.gym.core.service.TrainerService;
 import com.epam.gym.core.service.TrainingService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Optional;
+import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.UUID;
 
@@ -24,16 +34,33 @@ public class GymFacade {
     private final TraineeService traineeService;
     private final TrainerService trainerService;
     private final TrainingService trainingService;
+    private final TraineeMapper traineeMapper;
+    private final TrainerMapper trainerMapper;
+    private final TrainerSummaryMapper trainerSummaryMapper;
+    private final TrainingMapper trainingMapper;
+    private final TrainingTypeMapper trainingTypeMapper;
 
     public GymFacade(TraineeService traineeService,
                      TrainerService trainerService,
-                     TrainingService trainingService) {
+                     TrainingService trainingService,
+                     TraineeMapper traineeMapper,
+                     TrainerMapper trainerMapper,
+                     TrainerSummaryMapper trainerSummaryMapper,
+                     TrainingMapper trainingMapper,
+                     TrainingTypeMapper trainingTypeMapper) {
         this.traineeService = traineeService;
         this.trainerService = trainerService;
         this.trainingService = trainingService;
+        this.traineeMapper = traineeMapper;
+        this.trainerMapper = trainerMapper;
+        this.trainerSummaryMapper = trainerSummaryMapper;
+        this.trainingMapper = trainingMapper;
+        this.trainingTypeMapper = trainingTypeMapper;
     }
 
+    // -------------------------------------------------------------------------
     // Authentication
+    // -------------------------------------------------------------------------
 
     public boolean authenticateTrainee(String username, String password) {
         return traineeService.authenticate(username, password);
@@ -43,144 +70,138 @@ public class GymFacade {
         return trainerService.authenticate(username, password);
     }
 
+    // -------------------------------------------------------------------------
     // Trainee operations
+    // -------------------------------------------------------------------------
 
-    public Trainee registerTrainee(String firstName, String lastName,
-                                   LocalDate dateOfBirth, String address) {
-        return traineeService.createTrainee(firstName, lastName, dateOfBirth, address);
+    public RegistrationResponse registerTrainee(String firstName, String lastName,
+                                                LocalDate dateOfBirth, String address) {
+        Trainee trainee = traineeService.createTrainee(firstName, lastName, dateOfBirth, address);
+        return traineeMapper.toRegistrationResponse(trainee);
     }
 
-    public Trainee updateTraineeProfile(String username, String password,
-                                        String firstName, String lastName,
-                                        LocalDate dateOfBirth, String address, Boolean isActive) {
-        requireTraineeAuth(username, password);
-        return traineeService.updateTrainee(username, firstName, lastName, dateOfBirth, address, isActive);
+    public TraineeProfileResponse getTraineeByUsername(String username) {
+        return traineeService.getTraineeByUsername(username)
+                .map(traineeMapper::toProfileResponse)
+                .orElseThrow(() -> new NoSuchElementException("Trainee not found: " + username));
     }
 
-    public void deleteTrainee(String username, String password) {
-        requireTraineeAuth(username, password);
+    public UpdatedTraineeProfileResponse updateTraineeProfile(String username,
+                                                              String firstName, String lastName,
+                                                              LocalDate dateOfBirth, String address,
+                                                              Boolean isActive) {
+        Trainee updated = traineeService.updateTrainee(username, firstName, lastName,
+                dateOfBirth, address, isActive);
+        return traineeMapper.toUpdatedProfileResponse(updated);
+    }
+
+    public void deleteTrainee(String username) {
         traineeService.deleteTrainee(username);
     }
 
-    public void changeTraineePassword(String username, String currentPassword, String newPassword) {
-        traineeService.changePassword(username, currentPassword, newPassword);
+    public void changePassword(String username, String newPassword) {
+        if (traineeService.getTraineeByUsername(username).isPresent()) {
+            traineeService.changePassword(username, newPassword);
+        } else if (trainerService.getTrainerByUsername(username).isPresent()) {
+            trainerService.changePassword(username, newPassword);
+        } else {
+            throw new NoSuchElementException("User not found: " + username);
+        }
     }
 
-    public void activateTrainee(String username, String password) {
-        requireTraineeAuth(username, password);
+    public void activateTrainee(String username) {
         traineeService.activate(username);
     }
 
-    public void deactivateTrainee(String username, String password) {
-        traineeService.deactivate(username, password);
+    public void deactivateTrainee(String username) {
+        traineeService.deactivate(username);
     }
 
-    public Optional<Trainee> getTrainee(UUID id) {
-        return traineeService.getTraineeById(id);
+    public List<TrainingResponse> getTraineeTrainings(String username,
+                                                      LocalDate fromDate, LocalDate toDate,
+                                                      String trainerUsername, String trainingTypeName) {
+        return traineeService.getTrainings(username, fromDate, toDate, trainerUsername, trainingTypeName)
+                .stream()
+                .map(trainingMapper::toTraineeViewResponse)
+                .toList();
     }
 
-    public Optional<Trainee> getTraineeByUsername(String username) {
-        return traineeService.getTraineeByUsername(username);
+    public List<TrainerSummaryResponse> getNotAssignedTrainers(String traineeUsername) {
+        return traineeService.getNotAssignedTrainers(traineeUsername)
+                .stream()
+                .map(trainerSummaryMapper::toDto)
+                .toList();
     }
 
-    public List<Trainee> getAllTrainees() {
-        return traineeService.getAllTrainees();
+    public List<TrainerSummaryResponse> updateTraineeTrainers(String traineeUsername,
+                                                              Set<String> trainerUsernames) {
+        Trainee updated = traineeService.updateTrainers(traineeUsername, trainerUsernames);
+        return updated.getTrainers()
+                .stream()
+                .map(trainerSummaryMapper::toDto)
+                .toList();
     }
 
-    public List<Training> getTraineeTrainings(String username, String password,
-                                              LocalDate fromDate, LocalDate toDate,
-                                              String trainerName, String trainingTypeName) {
-        requireTraineeAuth(username, password);
-        return traineeService.getTrainings(username, fromDate, toDate, trainerName, trainingTypeName);
-    }
-
-    public List<Trainer> getNotAssignedTrainers(String traineeUsername, String password) {
-        requireTraineeAuth(traineeUsername, password);
-        return traineeService.getNotAssignedTrainers(traineeUsername);
-    }
-
-    public Trainee updateTraineeTrainers(String traineeUsername, String password,
-                                         Set<String> trainerUsernames) {
-        requireTraineeAuth(traineeUsername, password);
-        return traineeService.updateTrainers(traineeUsername, trainerUsernames);
-    }
-
+    // -------------------------------------------------------------------------
     // Trainer operations
+    // -------------------------------------------------------------------------
 
-    public Trainer registerTrainer(String firstName, String lastName, UUID trainingTypeId) {
-        return trainerService.createTrainer(firstName, lastName, trainingTypeId);
+    public RegistrationResponse registerTrainer(String firstName, String lastName, UUID trainingTypeId) {
+        Trainer trainer = trainerService.createTrainer(firstName, lastName, trainingTypeId);
+        return trainerMapper.toRegistrationResponse(trainer);
     }
 
-    public Trainer updateTrainerProfile(String username, String password,
-                                        String firstName, String lastName,
-                                        UUID trainingTypeId, Boolean isActive) {
-        requireTrainerAuth(username, password);
-        return trainerService.updateTrainer(username, firstName, lastName, trainingTypeId, isActive);
+    public TrainerProfileResponse getTrainerByUsername(String username) {
+        return trainerService.getTrainerByUsername(username)
+                .map(trainerMapper::toProfileResponse)
+                .orElseThrow(() -> new NoSuchElementException("Trainer not found: " + username));
     }
 
-    public void changeTrainerPassword(String username, String currentPassword, String newPassword) {
-        trainerService.changePassword(username, currentPassword, newPassword);
+    public UpdatedTrainerProfileResponse updateTrainerProfile(String username,
+                                                              String firstName, String lastName,
+                                                              Boolean isActive) {
+        Trainer current = trainerService.getTrainerByUsername(username)
+                .orElseThrow(() -> new NoSuchElementException("Trainer not found: " + username));
+        Trainer updated = trainerService.updateTrainer(username, firstName, lastName,
+                current.getSpecialization().getId(), isActive);
+        return trainerMapper.toUpdatedProfileResponse(updated);
     }
 
-    public void activateTrainer(String username, String password) {
-        requireTrainerAuth(username, password);
+    public void activateTrainer(String username) {
         trainerService.activate(username);
     }
 
-    public void deactivateTrainer(String username, String password) {
-        trainerService.deactivate(username, password);
+    public void deactivateTrainer(String username) {
+        trainerService.deactivate(username);
     }
 
-    public Optional<Trainer> getTrainer(UUID id) {
-        return trainerService.getTrainerById(id);
+    public List<TrainingResponse> getTrainerTrainings(String username,
+                                                      LocalDate fromDate, LocalDate toDate,
+                                                      String traineeUsername) {
+        return trainerService.getTrainings(username, fromDate, toDate, traineeUsername)
+                .stream()
+                .map(trainingMapper::toTrainerViewResponse)
+                .toList();
     }
 
-    public Optional<Trainer> getTrainerByUsername(String username) {
-        return trainerService.getTrainerByUsername(username);
-    }
-
-    public List<Trainer> getAllTrainers() {
-        return trainerService.getAllTrainers();
-    }
-
-    public List<Training> getTrainerTrainings(String username, String password,
-                                              LocalDate fromDate, LocalDate toDate,
-                                              String traineeName) {
-        requireTrainerAuth(username, password);
-        return trainerService.getTrainings(username, fromDate, toDate, traineeName);
-    }
-
+    // -------------------------------------------------------------------------
     // Training operations
+    // -------------------------------------------------------------------------
 
-    public Training createTraining(UUID traineeId, UUID trainerId, String trainingName,
-                                   UUID trainingTypeId, LocalDate trainingDate, Integer duration) {
-        return trainingService.createTraining(traineeId, trainerId, trainingName,
-                trainingTypeId, trainingDate, duration);
+    public void createTraining(String traineeUsername, String trainerUsername, String trainingName,
+                               LocalDate trainingDate, Integer duration) {
+        Trainee trainee = traineeService.getTraineeByUsername(traineeUsername)
+                .orElseThrow(() -> new NoSuchElementException("Trainee not found: " + traineeUsername));
+        Trainer trainer = trainerService.getTrainerByUsername(trainerUsername)
+                .orElseThrow(() -> new NoSuchElementException("Trainer not found: " + trainerUsername));
+        trainingService.createTraining(trainee, trainer, trainingName,
+                trainer.getSpecialization(), trainingDate, duration);
     }
 
-    public Optional<Training> getTraining(UUID id) {
-        return trainingService.getTrainingById(id);
-    }
-
-    public List<Training> getAllTrainings() {
-        return trainingService.getAllTrainings();
-    }
-
-    public List<TrainingType> getAllTrainingTypes() {
-        return trainingService.getAllTrainingTypes();
-    }
-
-    // Helper
-
-    private void requireTraineeAuth(String username, String password) {
-        if (!traineeService.authenticate(username, password)) {
-            throw new SecurityException("Authentication failed for trainee: " + username);
-        }
-    }
-
-    private void requireTrainerAuth(String username, String password) {
-        if (!trainerService.authenticate(username, password)) {
-            throw new SecurityException("Authentication failed for trainer: " + username);
-        }
+    public List<TrainingTypeResponse> getAllTrainingTypes() {
+        return trainingService.getAllTrainingTypes()
+                .stream()
+                .map(trainingTypeMapper::toDto)
+                .toList();
     }
 }

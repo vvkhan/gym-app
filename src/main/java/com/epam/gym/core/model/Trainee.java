@@ -7,8 +7,9 @@ import lombok.Setter;
 import lombok.ToString;
 
 import java.time.LocalDate;
-import java.util.UUID;
 import java.util.List;
+import java.util.Set;
+import java.util.UUID;
 
 @Getter
 @Setter
@@ -56,5 +57,5 @@ public class Trainee {
     @ManyToMany
     @JoinTable(name = "trainee2trainer", joinColumns = @JoinColumn(name = "trainee_id"),
         inverseJoinColumns = @JoinColumn(name = "trainer_id"))
-    private List<Trainer> trainers;
+    private Set<Trainer> trainers;
 }

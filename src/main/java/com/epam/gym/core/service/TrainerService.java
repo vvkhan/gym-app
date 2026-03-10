@@ -47,7 +47,6 @@ public class TrainerService {
         this.passwordGenerator = passwordGenerator;
     }
 
-    @Transactional
     public Trainer createTrainer(String firstName, String lastName, UUID trainingTypeId) {
         TrainingType trainingType = trainingTypeRepository.findById(trainingTypeId)
                 .orElseThrow(() -> new NoSuchElementException("TrainingType with id " + trainingTypeId + " not found"));
@@ -69,7 +68,6 @@ public class TrainerService {
         return trainerRepository.save(existing);
     }
 
-    @Transactional(readOnly = true)
     public Optional<Trainer> getTrainerById(UUID id) {
         if (id == null) {
             return Optional.empty();
@@ -77,7 +75,6 @@ public class TrainerService {
         return trainerRepository.findById(id);
     }
 
-    @Transactional(readOnly = true)
     public Optional<Trainer> getTrainerByUsername(String username) {
         if (username == null) {
             return Optional.empty();
@@ -85,21 +82,16 @@ public class TrainerService {
         return trainerRepository.findByUserUsername(username);
     }
 
-    @Transactional(readOnly = true)
     public List<Trainer> getAllTrainers() {
         return trainerRepository.findAll();
     }
 
-    @Transactional(readOnly = true)
     public boolean authenticate(String username, String password) {
         return trainerRepository.existsByUserUsernameAndUserPassword(username, password);
     }
 
     @Transactional
-    public void changePassword(String username, String currentPassword, String newPassword) {
-        if (!authenticate(username, currentPassword)) {
-            throw new SecurityException("Authentication failed for user: " + username);
-        }
+    public void changePassword(String username, String newPassword) {
         Trainer trainer = trainerRepository.findByUserUsername(username)
                 .orElseThrow(() -> new NoSuchElementException("Trainer not found: " + username));
         trainer.getUser().setPassword(newPassword);
@@ -118,10 +110,7 @@ public class TrainerService {
     }
 
     @Transactional
-    public void deactivate(String username, String password) {
-        if (!authenticate(username, password)) {
-            throw new SecurityException("Authentication failed for user: " + username);
-        }
+    public void deactivate(String username) {
         Trainer trainer = trainerRepository.findByUserUsername(username)
                 .orElseThrow(() -> new NoSuchElementException("Trainer not found: " + username));
         if (Boolean.FALSE.equals(trainer.getUser().getIsActive())) {
@@ -131,11 +120,10 @@ public class TrainerService {
         trainerRepository.save(trainer);
     }
 
-    @Transactional(readOnly = true)
     public List<Training> getTrainings(String username, LocalDate fromDate, LocalDate toDate,
-                                       String traineeName) {
+                                       String traineeUsername) {
         return trainingRepository.findAll(
-                TrainingSpecification.byTrainerCriteria(username, fromDate, toDate, traineeName));
+                TrainingSpecification.byTrainerCriteria(username, fromDate, toDate, traineeUsername));
     }
 
     // Helper

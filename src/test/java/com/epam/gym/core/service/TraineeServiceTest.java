@@ -17,7 +17,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
@@ -137,27 +137,13 @@ class TraineeServiceTest {
     @Test
     void changePassword_UpdatePassword() {
         Trainee trainee = traineeWithUser("John.Doe", "oldPass", true);
-        when(traineeRepository.existsByUserUsernameAndUserPassword("John.Doe", "oldPass")).thenReturn(true);
         when(traineeRepository.findByUserUsername("John.Doe")).thenReturn(Optional.of(trainee));
         when(traineeRepository.save(trainee)).thenReturn(trainee);
 
-        traineeService.changePassword("John.Doe", "oldPass", "newPass");
+        traineeService.changePassword("John.Doe", "newPass");
 
         assertEquals("newPass", trainee.getUser().getPassword());
         verify(traineeRepository).save(trainee);
-    }
-
-    @Test
-    void changePassword_ThrowWhenCurrentPasswordIncorrect() {
-        assertThrows(SecurityException.class, () ->
-                traineeService.changePassword("John.Doe", "wrong", "newPass"));
-        verify(traineeRepository, never()).save(any());
-    }
-
-    @Test
-    void changePassword_ThrowWhenTraineeNotFound() {
-        assertThrows(SecurityException.class, () ->
-                traineeService.changePassword("unknown", "pass", "newPass"));
     }
 
     @Test
@@ -184,11 +170,10 @@ class TraineeServiceTest {
     @Test
     void deactivate_SetIsActiveFalse() {
         Trainee trainee = traineeWithUser("John.Doe", "pass", true);
-        when(traineeRepository.existsByUserUsernameAndUserPassword("John.Doe", "pass")).thenReturn(true);
         when(traineeRepository.findByUserUsername("John.Doe")).thenReturn(Optional.of(trainee));
         when(traineeRepository.save(trainee)).thenReturn(trainee);
 
-        traineeService.deactivate("John.Doe", "pass");
+        traineeService.deactivate("John.Doe");
 
         assertFalse(trainee.getUser().getIsActive());
         verify(traineeRepository).save(trainee);
@@ -197,23 +182,16 @@ class TraineeServiceTest {
     @Test
     void deactivate_ThrowWhenAlreadyInactive() {
         Trainee trainee = traineeWithUser("John.Doe", "pass", false);
-        when(traineeRepository.existsByUserUsernameAndUserPassword("John.Doe", "pass")).thenReturn(true);
         when(traineeRepository.findByUserUsername("John.Doe")).thenReturn(Optional.of(trainee));
 
-        assertThrows(IllegalStateException.class, () -> traineeService.deactivate("John.Doe", "pass"));
-        verify(traineeRepository, never()).save(any());
-    }
-
-    @Test
-    void deactivate_ThrowWhenCredentialsInvalid() {
-        assertThrows(SecurityException.class, () -> traineeService.deactivate("John.Doe", "wrong"));
+        assertThrows(IllegalStateException.class, () -> traineeService.deactivate("John.Doe"));
         verify(traineeRepository, never()).save(any());
     }
 
     @Test
     void updateTrainers_UpdateTrainersList() {
         Trainee trainee = traineeWithUser("John.Doe", "pass", true);
-        trainee.setTrainers(new ArrayList<>());
+        trainee.setTrainers(new HashSet<>());
         User trainerUser = User.builder()
                 .username("Jane.Smith").password("p").isActive(true)
                 .firstName("Jane").lastName("Smith").build();
@@ -227,7 +205,7 @@ class TraineeServiceTest {
         Trainee result = traineeService.updateTrainers("John.Doe", Set.of("Jane.Smith"));
 
         assertEquals(1, result.getTrainers().size());
-        assertEquals("Jane.Smith", result.getTrainers().get(0).getUser().getUsername());
+        assertEquals("Jane.Smith", result.getTrainers().iterator().next().getUser().getUsername());
         verify(trainerRepository).findByUserUsernameIn(Set.of("Jane.Smith"));
         verify(traineeRepository).save(trainee);
     }
