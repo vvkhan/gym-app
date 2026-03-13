@@ -1,7 +1,7 @@
 {
-	"id": "e95e251c-d88d-4dbf-ac0a-9e6ab1f9d9c3",
+	"id": "8f27007c-7148-498e-a4a1-a54012cf8f78",
 	"name": "Gym App API",
-	"timestamp": "2026-03-12T15:45:13.062Z",
+	"timestamp": "2026-03-13T06:39:50.228Z",
 	"collection_id": "53036303-b466e1ee-f3f3-4439-97b3-ec90ed7a9474",
 	"folder_id": 0,
 	"environment_id": "0",
@@ -9,14 +9,14 @@
 	"delay": 0,
 	"persist": true,
 	"status": "finished",
-	"startedAt": "2026-03-12T15:45:09.959Z",
+	"startedAt": "2026-03-13T06:39:47.110Z",
 	"totalFail": 0,
 	"results": [
 		{
 			"id": "46b21b85-a549-46f8-bc02-ee158c5a6fe4",
 			"name": "CASE 1: Valid → 201",
 			"url": "http://localhost:8080/api/trainees",
-			"time": 264,
+			"time": 234,
 			"responseCode": {
 				"code": 201,
 				"name": "Created"
@@ -36,7 +36,7 @@
 				}
 			},
 			"times": [
-				264
+				234
 			],
 			"allTests": [
 				{
@@ -49,7 +49,7 @@
 			"id": "5398d383-3b55-4755-bd4d-3f8636ae6574",
 			"name": "CASE 2: Missing firstName → 400",
 			"url": "http://localhost:8080/api/trainees",
-			"time": 14,
+			"time": 12,
 			"responseCode": {
 				"code": 400,
 				"name": "Bad Request"
@@ -69,7 +69,7 @@
 				}
 			},
 			"times": [
-				14
+				12
 			],
 			"allTests": [
 				{
@@ -82,7 +82,7 @@
 			"id": "9fd14b1e-11f0-4a71-adc3-683e0715dfa8",
 			"name": "CASE 3: Missing lastName → 400",
 			"url": "http://localhost:8080/api/trainees",
-			"time": 4,
+			"time": 3,
 			"responseCode": {
 				"code": 400,
 				"name": "Bad Request"
@@ -102,7 +102,7 @@
 				}
 			},
 			"times": [
-				4
+				3
 			],
 			"allTests": [
 				{
@@ -115,7 +115,7 @@
 			"id": "99fcd031-5ec3-48a9-ae31-0921a2dda439",
 			"name": "CASE 1: Valid → 201",
 			"url": "http://localhost:8080/api/trainers",
-			"time": 74,
+			"time": 70,
 			"responseCode": {
 				"code": 201,
 				"name": "Created"
@@ -135,7 +135,7 @@
 				}
 			},
 			"times": [
-				74
+				70
 			],
 			"allTests": [
 				{
@@ -235,7 +235,7 @@
 			"id": "9eca5607-3aca-4e3d-a76c-b7bfe6a41a6b",
 			"name": "CASE 1: Valid — Trainee → 200",
 			"url": "http://localhost:8080/api/auth/login",
-			"time": 18,
+			"time": 19,
 			"responseCode": {
 				"code": 200,
 				"name": "OK"
@@ -250,7 +250,7 @@
 				}
 			},
 			"times": [
-				18
+				19
 			],
 			"allTests": [
 				{
@@ -262,7 +262,7 @@
 			"id": "0ec77ed4-8a6b-49c0-975d-a51849163dc5",
 			"name": "CASE 2: Valid — Trainer → 200",
 			"url": "http://localhost:8080/api/auth/login",
-			"time": 30,
+			"time": 42,
 			"responseCode": {
 				"code": 200,
 				"name": "OK"
@@ -277,7 +277,7 @@
 				}
 			},
 			"times": [
-				30
+				42
 			],
 			"allTests": [
 				{
@@ -289,7 +289,7 @@
 			"id": "8df7588e-c0c7-44d4-bdec-2f2aa600bcbb",
 			"name": "CASE 3: Invalid credentials → 401",
 			"url": "http://localhost:8080/api/auth/login",
-			"time": 30,
+			"time": 27,
 			"responseCode": {
 				"code": 401,
 				"name": "Unauthorized"
@@ -309,7 +309,7 @@
 				}
 			},
 			"times": [
-				30
+				27
 			],
 			"allTests": [
 				{
@@ -349,7 +349,7 @@
 			"id": "c8dc54e1-75cf-42e4-8d65-8bc319843782",
 			"name": "CASE 1: Valid → 200",
 			"url": "http://localhost:8080/api/auth/password",
-			"time": 66,
+			"time": 71,
 			"responseCode": {
 				"code": 200,
 				"name": "OK"
@@ -364,7 +364,7 @@
 				}
 			},
 			"times": [
-				66
+				71
 			],
 			"allTests": [
 				{
@@ -376,7 +376,7 @@
 			"id": "adb6a66b-a41b-415a-8b5d-6ebb1a28cee7",
 			"name": "CASE 2: Wrong old password → 401",
 			"url": "http://localhost:8080/api/auth/password",
-			"time": 32,
+			"time": 29,
 			"responseCode": {
 				"code": 401,
 				"name": "Unauthorized"
@@ -391,7 +391,7 @@
 				}
 			},
 			"times": [
-				32
+				29
 			],
 			"allTests": [
 				{
@@ -429,8 +429,8 @@
 		{
 			"id": "7335e280-736a-463d-8885-e6c566ce4006",
 			"name": "CASE 1: Valid → 200",
-			"url": "http://localhost:8080/api/trainees/Alice.Smith1",
-			"time": 44,
+			"url": "http://localhost:8080/api/trainees/Alice.Smith2",
+			"time": 40,
 			"responseCode": {
 				"code": 200,
 				"name": "OK"
@@ -450,7 +450,7 @@
 				}
 			},
 			"times": [
-				44
+				40
 			],
 			"allTests": [
 				{
@@ -462,8 +462,8 @@
 		{
 			"id": "4d517db1-75a9-4796-b39c-3b54b42de537",
 			"name": "CASE 2: Missing Authorization header → 401",
-			"url": "http://localhost:8080/api/trainees/Alice.Smith1",
-			"time": 3,
+			"url": "http://localhost:8080/api/trainees/Alice.Smith2",
+			"time": 2,
 			"responseCode": {
 				"code": 401,
 				"name": "Unauthorized"
@@ -478,7 +478,7 @@
 				}
 			},
 			"times": [
-				3
+				2
 			],
 			"allTests": [
 				{
@@ -489,8 +489,8 @@
 		{
 			"id": "4fdf81b7-6f2b-4724-8794-5d0b1e05a4d6",
 			"name": "CASE 3: Wrong password → 401",
-			"url": "http://localhost:8080/api/trainees/Alice.Smith1",
-			"time": 35,
+			"url": "http://localhost:8080/api/trainees/Alice.Smith2",
+			"time": 38,
 			"responseCode": {
 				"code": 401,
 				"name": "Unauthorized"
@@ -505,7 +505,7 @@
 				}
 			},
 			"times": [
-				35
+				38
 			],
 			"allTests": [
 				{
@@ -516,8 +516,8 @@
 		{
 			"id": "f53b5838-66de-4b91-aaee-93e7759bdd31",
 			"name": "CASE 4: Different user (ownership check) → 401",
-			"url": "http://localhost:8080/api/trainees/Alice.Smith1",
-			"time": 3,
+			"url": "http://localhost:8080/api/trainees/Alice.Smith2",
+			"time": 2,
 			"responseCode": {
 				"code": 401,
 				"name": "Unauthorized"
@@ -532,7 +532,7 @@
 				}
 			},
 			"times": [
-				3
+				2
 			],
 			"allTests": [
 				{
@@ -543,8 +543,8 @@
 		{
 			"id": "6db4f966-52e3-490e-8aa5-42289eb03e16",
 			"name": "CASE 5: Trainer accessing own username on trainee endpoint → 404",
-			"url": "http://localhost:8080/api/trainees/John.Smith2",
-			"time": 54,
+			"url": "http://localhost:8080/api/trainees/John.Smith3",
+			"time": 47,
 			"responseCode": {
 				"code": 404,
 				"name": "Not Found"
@@ -564,7 +564,7 @@
 				}
 			},
 			"times": [
-				54
+				47
 			],
 			"allTests": [
 				{
@@ -576,8 +576,8 @@
 		{
 			"id": "0c7cb8d9-5bd8-4c73-88d0-6dd2d64fdb51",
 			"name": "CASE 1: Valid → 200",
-			"url": "http://localhost:8080/api/trainees/Alice.Smith1",
-			"time": 79,
+			"url": "http://localhost:8080/api/trainees/Alice.Smith2",
+			"time": 37,
 			"responseCode": {
 				"code": 200,
 				"name": "OK"
@@ -597,7 +597,7 @@
 				}
 			},
 			"times": [
-				79
+				37
 			],
 			"allTests": [
 				{
@@ -609,8 +609,8 @@
 		{
 			"id": "09980e91-60d9-487b-a8b4-3eb45a0eebea",
 			"name": "CASE 2: Missing isActive → 400",
-			"url": "http://localhost:8080/api/trainees/Alice.Smith1",
-			"time": 9,
+			"url": "http://localhost:8080/api/trainees/Alice.Smith2",
+			"time": 3,
 			"responseCode": {
 				"code": 400,
 				"name": "Bad Request"
@@ -625,7 +625,7 @@
 				}
 			},
 			"times": [
-				9
+				3
 			],
 			"allTests": [
 				{
@@ -636,8 +636,8 @@
 		{
 			"id": "0838d6ae-9353-4fd4-bbc0-6f7d48533109",
 			"name": "CASE 3: Missing Authorization header → 401",
-			"url": "http://localhost:8080/api/trainees/Alice.Smith1",
-			"time": 8,
+			"url": "http://localhost:8080/api/trainees/Alice.Smith2",
+			"time": 3,
 			"responseCode": {
 				"code": 401,
 				"name": "Unauthorized"
@@ -652,7 +652,7 @@
 				}
 			},
 			"times": [
-				8
+				3
 			],
 			"allTests": [
 				{
@@ -663,8 +663,8 @@
 		{
 			"id": "470c2fe9-b58a-4c98-97a1-cf78278fcccd",
 			"name": "CASE 4: Trainer credentials on trainee endpoint → 404",
-			"url": "http://localhost:8080/api/trainees/John.Smith2",
-			"time": 60,
+			"url": "http://localhost:8080/api/trainees/John.Smith3",
+			"time": 46,
 			"responseCode": {
 				"code": 404,
 				"name": "Not Found"
@@ -684,7 +684,7 @@
 				}
 			},
 			"times": [
-				60
+				46
 			],
 			"allTests": [
 				{
@@ -696,8 +696,8 @@
 		{
 			"id": "c51e198c-d83d-4d16-94f9-bfe676b4b79b",
 			"name": "CASE 1: Valid → 200 (re-registers trainee automatically)",
-			"url": "http://localhost:8080/api/trainees/Alice.Smith1",
-			"time": 44,
+			"url": "http://localhost:8080/api/trainees/Alice.Smith2",
+			"time": 43,
 			"responseCode": {
 				"code": 200,
 				"name": "OK"
@@ -712,7 +712,7 @@
 				}
 			},
 			"times": [
-				44
+				43
 			],
 			"allTests": [
 				{
@@ -723,7 +723,7 @@
 		{
 			"id": "b25a9aa4-b109-4297-b553-c1eae627c838",
 			"name": "CASE 2: Missing Authorization header → 401",
-			"url": "http://localhost:8080/api/trainees/Alice.Smith1",
+			"url": "http://localhost:8080/api/trainees/Alice.Smith2",
 			"time": 2,
 			"responseCode": {
 				"code": 401,
@@ -750,8 +750,8 @@
 		{
 			"id": "8dfe141c-ad48-46fe-ad75-3d351755453c",
 			"name": "CASE 3: Trainer credentials on trainee endpoint → 404",
-			"url": "http://localhost:8080/api/trainees/John.Smith2",
-			"time": 42,
+			"url": "http://localhost:8080/api/trainees/John.Smith3",
+			"time": 44,
 			"responseCode": {
 				"code": 404,
 				"name": "Not Found"
@@ -771,7 +771,7 @@
 				}
 			},
 			"times": [
-				42
+				44
 			],
 			"allTests": [
 				{
@@ -783,8 +783,8 @@
 		{
 			"id": "1514ae3b-b61e-48ff-848c-71764b20048d",
 			"name": "CASE 1: Valid → 200",
-			"url": "http://localhost:8080/api/trainers/John.Smith2",
-			"time": 45,
+			"url": "http://localhost:8080/api/trainers/John.Smith3",
+			"time": 41,
 			"responseCode": {
 				"code": 200,
 				"name": "OK"
@@ -804,7 +804,7 @@
 				}
 			},
 			"times": [
-				45
+				41
 			],
 			"allTests": [
 				{
@@ -816,7 +816,7 @@
 		{
 			"id": "b668864e-18f6-4381-8862-49ab2deba31c",
 			"name": "CASE 2: Missing Authorization header → 401",
-			"url": "http://localhost:8080/api/trainers/John.Smith2",
+			"url": "http://localhost:8080/api/trainers/John.Smith3",
 			"time": 2,
 			"responseCode": {
 				"code": 401,
@@ -843,7 +843,7 @@
 		{
 			"id": "92f14bf4-2f9e-432f-9643-47f33ba6d26a",
 			"name": "CASE 3: Wrong password → 401",
-			"url": "http://localhost:8080/api/trainers/John.Smith2",
+			"url": "http://localhost:8080/api/trainers/John.Smith3",
 			"time": 28,
 			"responseCode": {
 				"code": 401,
@@ -870,7 +870,7 @@
 		{
 			"id": "693ddd38-1a76-4b96-90bb-dcbff3a8c546",
 			"name": "CASE 4: Different user (ownership check) → 401",
-			"url": "http://localhost:8080/api/trainers/John.Smith2",
+			"url": "http://localhost:8080/api/trainers/John.Smith3",
 			"time": 2,
 			"responseCode": {
 				"code": 401,
@@ -897,8 +897,8 @@
 		{
 			"id": "837ee9d1-b53f-41a3-af6e-e7d101412965",
 			"name": "CASE 5: Trainee credentials on trainer endpoint → 404",
-			"url": "http://localhost:8080/api/trainers/Alice.Smith1",
-			"time": 31,
+			"url": "http://localhost:8080/api/trainers/Alice.Smith2",
+			"time": 29,
 			"responseCode": {
 				"code": 404,
 				"name": "Not Found"
@@ -918,7 +918,7 @@
 				}
 			},
 			"times": [
-				31
+				29
 			],
 			"allTests": [
 				{
@@ -930,8 +930,8 @@
 		{
 			"id": "f0bb3d2e-91dc-484f-93c4-73b56c0dc511",
 			"name": "CASE 1: Valid → 200",
-			"url": "http://localhost:8080/api/trainers/John.Smith2",
-			"time": 59,
+			"url": "http://localhost:8080/api/trainers/John.Smith3",
+			"time": 58,
 			"responseCode": {
 				"code": 200,
 				"name": "OK"
@@ -951,7 +951,7 @@
 				}
 			},
 			"times": [
-				59
+				58
 			],
 			"allTests": [
 				{
@@ -963,8 +963,8 @@
 		{
 			"id": "9e7499f8-4a47-4d8c-b8e1-2c94af6664e6",
 			"name": "CASE 2: Missing firstName → 400",
-			"url": "http://localhost:8080/api/trainers/John.Smith2",
-			"time": 4,
+			"url": "http://localhost:8080/api/trainers/John.Smith3",
+			"time": 3,
 			"responseCode": {
 				"code": 400,
 				"name": "Bad Request"
@@ -979,7 +979,7 @@
 				}
 			},
 			"times": [
-				4
+				3
 			],
 			"allTests": [
 				{
@@ -990,106 +990,7 @@
 		{
 			"id": "e46e684a-d076-4ca1-8abb-b011d0d43626",
 			"name": "CASE 3: Missing Authorization header → 401",
-			"url": "http://localhost:8080/api/trainers/John.Smith2",
-			"time": 4,
-			"responseCode": {
-				"code": 401,
-				"name": "Unauthorized"
-			},
-			"tests": {
-				"Status is 401": true
-			},
-			"testPassFailCounts": {
-				"Status is 401": {
-					"pass": 1,
-					"fail": 0
-				}
-			},
-			"times": [
-				4
-			],
-			"allTests": [
-				{
-					"Status is 401": true
-				}
-			]
-		},
-		{
-			"id": "183175a2-7021-4677-92cc-621fc4b31da3",
-			"name": "CASE 4: Trainee credentials on trainer endpoint → 404",
-			"url": "http://localhost:8080/api/trainers/Alice.Smith1",
-			"time": 33,
-			"responseCode": {
-				"code": 404,
-				"name": "Not Found"
-			},
-			"tests": {
-				"Status is 404": true,
-				"Error message present": true
-			},
-			"testPassFailCounts": {
-				"Status is 404": {
-					"pass": 1,
-					"fail": 0
-				},
-				"Error message present": {
-					"pass": 1,
-					"fail": 0
-				}
-			},
-			"times": [
-				33
-			],
-			"allTests": [
-				{
-					"Status is 404": true,
-					"Error message present": true
-				}
-			]
-		},
-		{
-			"id": "2bfac8cd-f39d-4c30-9583-96f107f50867",
-			"name": "CASE 1: Valid → 200",
-			"url": "http://localhost:8080/api/trainees/Alice.Smith1/not-assigned-trainers",
-			"time": 39,
-			"responseCode": {
-				"code": 200,
-				"name": "OK"
-			},
-			"tests": {
-				"Status is 200": true,
-				"Returns array of trainers": true,
-				"Trainer entry has required fields": true
-			},
-			"testPassFailCounts": {
-				"Status is 200": {
-					"pass": 1,
-					"fail": 0
-				},
-				"Returns array of trainers": {
-					"pass": 1,
-					"fail": 0
-				},
-				"Trainer entry has required fields": {
-					"pass": 1,
-					"fail": 0
-				}
-			},
-			"times": [
-				39
-			],
-			"allTests": [
-				{
-					"Status is 200": true,
-					"Returns array of trainers": true,
-					"Trainer entry has required fields": true
-				}
-			]
-		},
-		{
-			"id": "cdd908cd-d7a5-4e04-bc18-9da2a7b3a791",
-			"name": "CASE 2: Missing Authorization header → 401",
-			"url": "http://localhost:8080/api/trainees/Alice.Smith1/not-assigned-trainers",
+			"url": "http://localhost:8080/api/trainers/John.Smith3",
 			"time": 3,
 			"responseCode": {
 				"code": 401,
@@ -1114,10 +1015,109 @@
 			]
 		},
 		{
+			"id": "183175a2-7021-4677-92cc-621fc4b31da3",
+			"name": "CASE 4: Trainee credentials on trainer endpoint → 404",
+			"url": "http://localhost:8080/api/trainers/Alice.Smith2",
+			"time": 30,
+			"responseCode": {
+				"code": 404,
+				"name": "Not Found"
+			},
+			"tests": {
+				"Status is 404": true,
+				"Error message present": true
+			},
+			"testPassFailCounts": {
+				"Status is 404": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Error message present": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				30
+			],
+			"allTests": [
+				{
+					"Status is 404": true,
+					"Error message present": true
+				}
+			]
+		},
+		{
+			"id": "2bfac8cd-f39d-4c30-9583-96f107f50867",
+			"name": "CASE 1: Valid → 200",
+			"url": "http://localhost:8080/api/trainees/Alice.Smith2/not-assigned-trainers",
+			"time": 44,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"Status is 200": true,
+				"Returns array of trainers": true,
+				"Trainer entry has required fields": true
+			},
+			"testPassFailCounts": {
+				"Status is 200": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Returns array of trainers": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Trainer entry has required fields": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				44
+			],
+			"allTests": [
+				{
+					"Status is 200": true,
+					"Returns array of trainers": true,
+					"Trainer entry has required fields": true
+				}
+			]
+		},
+		{
+			"id": "cdd908cd-d7a5-4e04-bc18-9da2a7b3a791",
+			"name": "CASE 2: Missing Authorization header → 401",
+			"url": "http://localhost:8080/api/trainees/Alice.Smith2/not-assigned-trainers",
+			"time": 2,
+			"responseCode": {
+				"code": 401,
+				"name": "Unauthorized"
+			},
+			"tests": {
+				"Status is 401": true
+			},
+			"testPassFailCounts": {
+				"Status is 401": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				2
+			],
+			"allTests": [
+				{
+					"Status is 401": true
+				}
+			]
+		},
+		{
 			"id": "51cbc790-faf6-4f8e-854a-1eb82f98314b",
 			"name": "CASE 1: Valid → 200",
-			"url": "http://localhost:8080/api/trainees/Alice.Smith1/trainers",
-			"time": 50,
+			"url": "http://localhost:8080/api/trainees/Alice.Smith2/trainers",
+			"time": 51,
 			"responseCode": {
 				"code": 200,
 				"name": "OK"
@@ -1137,7 +1137,7 @@
 				}
 			},
 			"times": [
-				50
+				51
 			],
 			"allTests": [
 				{
@@ -1149,7 +1149,7 @@
 		{
 			"id": "d7199721-aa93-4ef3-86de-2ef899e4a503",
 			"name": "CASE 2: Empty trainerUsernames list → 400",
-			"url": "http://localhost:8080/api/trainees/Alice.Smith1/trainers",
+			"url": "http://localhost:8080/api/trainees/Alice.Smith2/trainers",
 			"time": 3,
 			"responseCode": {
 				"code": 400,
@@ -1176,8 +1176,8 @@
 		{
 			"id": "a8f98459-f2d1-4310-95c9-55d831e7fc6e",
 			"name": "CASE 3: Trainer not found → 404",
-			"url": "http://localhost:8080/api/trainees/Alice.Smith1/trainers",
-			"time": 41,
+			"url": "http://localhost:8080/api/trainees/Alice.Smith2/trainers",
+			"time": 40,
 			"responseCode": {
 				"code": 404,
 				"name": "Not Found"
@@ -1197,7 +1197,7 @@
 				}
 			},
 			"times": [
-				41
+				40
 			],
 			"allTests": [
 				{
@@ -1209,7 +1209,7 @@
 		{
 			"id": "385d6062-36a8-4e9f-9138-203f6c157b13",
 			"name": "CASE 4: Missing Authorization header → 401",
-			"url": "http://localhost:8080/api/trainees/Alice.Smith1/trainers",
+			"url": "http://localhost:8080/api/trainees/Alice.Smith2/trainers",
 			"time": 2,
 			"responseCode": {
 				"code": 401,
@@ -1236,133 +1236,7 @@
 		{
 			"id": "7163eb5a-0060-40e1-b290-d98e603916cd",
 			"name": "CASE 1: Valid — no filters → 200",
-			"url": "http://localhost:8080/api/trainees/Alice.Smith1/trainings",
-			"time": 31,
-			"responseCode": {
-				"code": 200,
-				"name": "OK"
-			},
-			"tests": {
-				"Status is 200": true,
-				"Returns array": true
-			},
-			"testPassFailCounts": {
-				"Status is 200": {
-					"pass": 1,
-					"fail": 0
-				},
-				"Returns array": {
-					"pass": 1,
-					"fail": 0
-				}
-			},
-			"times": [
-				31
-			],
-			"allTests": [
-				{
-					"Status is 200": true,
-					"Returns array": true
-				}
-			]
-		},
-		{
-			"id": "677ec464-7e80-4959-938b-1144159c250c",
-			"name": "CASE 2: Valid — with all filters → 200",
-			"url": "http://localhost:8080/api/trainees/Alice.Smith1/trainings?periodFrom=2025-01-01&periodTo=2025-12-31&trainerUsername=John.Smith2&trainingType=Fitness",
-			"time": 32,
-			"responseCode": {
-				"code": 200,
-				"name": "OK"
-			},
-			"tests": {
-				"Status is 200": true,
-				"Returns array": true
-			},
-			"testPassFailCounts": {
-				"Status is 200": {
-					"pass": 1,
-					"fail": 0
-				},
-				"Returns array": {
-					"pass": 1,
-					"fail": 0
-				}
-			},
-			"times": [
-				32
-			],
-			"allTests": [
-				{
-					"Status is 200": true,
-					"Returns array": true
-				}
-			]
-		},
-		{
-			"id": "35b8cbeb-b27e-4d99-a7c7-b0c31066bf2e",
-			"name": "CASE 3: Missing Authorization header → 401",
-			"url": "http://localhost:8080/api/trainees/Alice.Smith1/trainings",
-			"time": 2,
-			"responseCode": {
-				"code": 401,
-				"name": "Unauthorized"
-			},
-			"tests": {
-				"Status is 401": true
-			},
-			"testPassFailCounts": {
-				"Status is 401": {
-					"pass": 1,
-					"fail": 0
-				}
-			},
-			"times": [
-				2
-			],
-			"allTests": [
-				{
-					"Status is 401": true
-				}
-			]
-		},
-		{
-			"id": "33c3c600-568e-49d0-b294-cfce994cb1cf",
-			"name": "CASE 1: Valid — no filters → 200",
-			"url": "http://localhost:8080/api/trainers/John.Smith2/trainings",
-			"time": 49,
-			"responseCode": {
-				"code": 200,
-				"name": "OK"
-			},
-			"tests": {
-				"Status is 200": true,
-				"Returns array": true
-			},
-			"testPassFailCounts": {
-				"Status is 200": {
-					"pass": 1,
-					"fail": 0
-				},
-				"Returns array": {
-					"pass": 1,
-					"fail": 0
-				}
-			},
-			"times": [
-				49
-			],
-			"allTests": [
-				{
-					"Status is 200": true,
-					"Returns array": true
-				}
-			]
-		},
-		{
-			"id": "abf9de66-204a-4164-b59d-c4aa0effaef8",
-			"name": "CASE 2: Valid — with filters → 200",
-			"url": "http://localhost:8080/api/trainers/John.Smith2/trainings?periodFrom=2025-01-01&periodTo=2025-12-31&traineeUsername=Alice.Smith1",
+			"url": "http://localhost:8080/api/trainees/Alice.Smith2/trainings",
 			"time": 39,
 			"responseCode": {
 				"code": 200,
@@ -1393,9 +1267,135 @@
 			]
 		},
 		{
+			"id": "677ec464-7e80-4959-938b-1144159c250c",
+			"name": "CASE 2: Valid — with all filters → 200",
+			"url": "http://localhost:8080/api/trainees/Alice.Smith2/trainings?periodFrom=2025-01-01&periodTo=2025-12-31&trainerUsername=John.Smith3&trainingType=Fitness",
+			"time": 38,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"Status is 200": true,
+				"Returns array": true
+			},
+			"testPassFailCounts": {
+				"Status is 200": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Returns array": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				38
+			],
+			"allTests": [
+				{
+					"Status is 200": true,
+					"Returns array": true
+				}
+			]
+		},
+		{
+			"id": "35b8cbeb-b27e-4d99-a7c7-b0c31066bf2e",
+			"name": "CASE 3: Missing Authorization header → 401",
+			"url": "http://localhost:8080/api/trainees/Alice.Smith2/trainings",
+			"time": 2,
+			"responseCode": {
+				"code": 401,
+				"name": "Unauthorized"
+			},
+			"tests": {
+				"Status is 401": true
+			},
+			"testPassFailCounts": {
+				"Status is 401": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				2
+			],
+			"allTests": [
+				{
+					"Status is 401": true
+				}
+			]
+		},
+		{
+			"id": "33c3c600-568e-49d0-b294-cfce994cb1cf",
+			"name": "CASE 1: Valid — no filters → 200",
+			"url": "http://localhost:8080/api/trainers/John.Smith3/trainings",
+			"time": 50,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"Status is 200": true,
+				"Returns array": true
+			},
+			"testPassFailCounts": {
+				"Status is 200": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Returns array": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				50
+			],
+			"allTests": [
+				{
+					"Status is 200": true,
+					"Returns array": true
+				}
+			]
+		},
+		{
+			"id": "abf9de66-204a-4164-b59d-c4aa0effaef8",
+			"name": "CASE 2: Valid — with filters → 200",
+			"url": "http://localhost:8080/api/trainers/John.Smith3/trainings?periodFrom=2025-01-01&periodTo=2025-12-31&traineeUsername=Alice.Smith2",
+			"time": 44,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"Status is 200": true,
+				"Returns array": true
+			},
+			"testPassFailCounts": {
+				"Status is 200": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Returns array": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				44
+			],
+			"allTests": [
+				{
+					"Status is 200": true,
+					"Returns array": true
+				}
+			]
+		},
+		{
 			"id": "5669a178-9c2f-4f02-a142-ec6bb0265c10",
 			"name": "CASE 3: Missing Authorization header → 401",
-			"url": "http://localhost:8080/api/trainers/John.Smith2/trainings",
+			"url": "http://localhost:8080/api/trainers/John.Smith3/trainings",
 			"time": 2,
 			"responseCode": {
 				"code": 401,
@@ -1504,7 +1504,7 @@
 			"id": "14e71046-7cf5-47d7-b999-c974f56791b0",
 			"name": "CASE 4: Wrong credentials → 401",
 			"url": "http://localhost:8080/api/trainings",
-			"time": 19,
+			"time": 16,
 			"responseCode": {
 				"code": 401,
 				"name": "Unauthorized"
@@ -1519,7 +1519,7 @@
 				}
 			},
 			"times": [
-				19
+				16
 			],
 			"allTests": [
 				{
@@ -1558,7 +1558,7 @@
 			"id": "86b224ae-48f4-4bfc-a593-cfb673d5d875",
 			"name": "CASE 6: Non-existent trainer username → 404",
 			"url": "http://localhost:8080/api/trainings",
-			"time": 50,
+			"time": 48,
 			"responseCode": {
 				"code": 404,
 				"name": "Not Found"
@@ -1578,7 +1578,7 @@
 				}
 			},
 			"times": [
-				50
+				48
 			],
 			"allTests": [
 				{
@@ -1590,8 +1590,8 @@
 		{
 			"id": "88cb7980-d7b5-4845-aaee-f711b15f5051",
 			"name": "CASE 1: Deactivate → 200",
-			"url": "http://localhost:8080/api/trainees/Alice.Smith1/activate",
-			"time": 35,
+			"url": "http://localhost:8080/api/trainees/Alice.Smith2/activate",
+			"time": 33,
 			"responseCode": {
 				"code": 200,
 				"name": "OK"
@@ -1606,7 +1606,7 @@
 				}
 			},
 			"times": [
-				35
+				33
 			],
 			"allTests": [
 				{
@@ -1617,8 +1617,8 @@
 		{
 			"id": "85cc6433-9b86-41b4-9e03-8be5dba4d722",
 			"name": "CASE 2: Already inactive → 409",
-			"url": "http://localhost:8080/api/trainees/Alice.Smith1/activate",
-			"time": 28,
+			"url": "http://localhost:8080/api/trainees/Alice.Smith2/activate",
+			"time": 31,
 			"responseCode": {
 				"code": 409,
 				"name": "Conflict"
@@ -1633,7 +1633,7 @@
 				}
 			},
 			"times": [
-				28
+				31
 			],
 			"allTests": [
 				{
@@ -1644,7 +1644,7 @@
 		{
 			"id": "f231b141-f15c-4783-9af2-bda21ed8215c",
 			"name": "CASE 3: Activate → 200",
-			"url": "http://localhost:8080/api/trainees/Alice.Smith1/activate",
+			"url": "http://localhost:8080/api/trainees/Alice.Smith2/activate",
 			"time": 30,
 			"responseCode": {
 				"code": 200,
@@ -1671,8 +1671,8 @@
 		{
 			"id": "9a58f36b-9762-4e51-841b-26175642df22",
 			"name": "CASE 4: Already active → 409",
-			"url": "http://localhost:8080/api/trainees/Alice.Smith1/activate",
-			"time": 33,
+			"url": "http://localhost:8080/api/trainees/Alice.Smith2/activate",
+			"time": 29,
 			"responseCode": {
 				"code": 409,
 				"name": "Conflict"
@@ -1687,7 +1687,7 @@
 				}
 			},
 			"times": [
-				33
+				29
 			],
 			"allTests": [
 				{
@@ -1698,7 +1698,7 @@
 		{
 			"id": "b210f232-c5bd-44e2-a581-3366f5f56a1f",
 			"name": "CASE 5: Missing Authorization header → 401",
-			"url": "http://localhost:8080/api/trainees/Alice.Smith1/activate",
+			"url": "http://localhost:8080/api/trainees/Alice.Smith2/activate",
 			"time": 2,
 			"responseCode": {
 				"code": 401,
@@ -1725,8 +1725,8 @@
 		{
 			"id": "04a0079f-5d24-4363-a007-5bfe6d067f15",
 			"name": "CASE 6: Trainer credentials on trainee endpoint → 404",
-			"url": "http://localhost:8080/api/trainees/John.Smith2/activate",
-			"time": 44,
+			"url": "http://localhost:8080/api/trainees/John.Smith3/activate",
+			"time": 41,
 			"responseCode": {
 				"code": 404,
 				"name": "Not Found"
@@ -1746,7 +1746,7 @@
 				}
 			},
 			"times": [
-				44
+				41
 			],
 			"allTests": [
 				{
@@ -1758,8 +1758,8 @@
 		{
 			"id": "0ce6640f-66ac-480a-96dd-d0baf8f74590",
 			"name": "CASE 1: Deactivate → 200",
-			"url": "http://localhost:8080/api/trainers/John.Smith2/activate",
-			"time": 42,
+			"url": "http://localhost:8080/api/trainers/John.Smith3/activate",
+			"time": 41,
 			"responseCode": {
 				"code": 200,
 				"name": "OK"
@@ -1774,7 +1774,7 @@
 				}
 			},
 			"times": [
-				42
+				41
 			],
 			"allTests": [
 				{
@@ -1785,8 +1785,8 @@
 		{
 			"id": "b02ac32d-3233-4faa-80c6-1170fdc58aa4",
 			"name": "CASE 2: Already inactive → 409",
-			"url": "http://localhost:8080/api/trainers/John.Smith2/activate",
-			"time": 47,
+			"url": "http://localhost:8080/api/trainers/John.Smith3/activate",
+			"time": 35,
 			"responseCode": {
 				"code": 409,
 				"name": "Conflict"
@@ -1801,7 +1801,7 @@
 				}
 			},
 			"times": [
-				47
+				35
 			],
 			"allTests": [
 				{
@@ -1812,8 +1812,8 @@
 		{
 			"id": "db660c5d-2ab8-45fc-a5fe-33153bf42a6d",
 			"name": "CASE 3: Activate → 200",
-			"url": "http://localhost:8080/api/trainers/John.Smith2/activate",
-			"time": 42,
+			"url": "http://localhost:8080/api/trainers/John.Smith3/activate",
+			"time": 38,
 			"responseCode": {
 				"code": 200,
 				"name": "OK"
@@ -1828,7 +1828,7 @@
 				}
 			},
 			"times": [
-				42
+				38
 			],
 			"allTests": [
 				{
@@ -1839,8 +1839,8 @@
 		{
 			"id": "ecf31765-7196-4659-b2f0-afebd5415129",
 			"name": "CASE 4: Already active → 409",
-			"url": "http://localhost:8080/api/trainers/John.Smith2/activate",
-			"time": 41,
+			"url": "http://localhost:8080/api/trainers/John.Smith3/activate",
+			"time": 40,
 			"responseCode": {
 				"code": 409,
 				"name": "Conflict"
@@ -1855,7 +1855,7 @@
 				}
 			},
 			"times": [
-				41
+				40
 			],
 			"allTests": [
 				{
@@ -1866,7 +1866,7 @@
 		{
 			"id": "1c721b72-d37e-4598-9c24-9cf343119372",
 			"name": "CASE 5: Missing Authorization header → 401",
-			"url": "http://localhost:8080/api/trainers/John.Smith2/activate",
+			"url": "http://localhost:8080/api/trainers/John.Smith3/activate",
 			"time": 2,
 			"responseCode": {
 				"code": 401,
@@ -1893,8 +1893,8 @@
 		{
 			"id": "2edf20c9-5a2b-4a20-8f58-3df73e93f171",
 			"name": "CASE 6: Trainee credentials on trainer endpoint → 404",
-			"url": "http://localhost:8080/api/trainers/Alice.Smith1/activate",
-			"time": 30,
+			"url": "http://localhost:8080/api/trainers/Alice.Smith2/activate",
+			"time": 29,
 			"responseCode": {
 				"code": 404,
 				"name": "Not Found"
@@ -1914,7 +1914,7 @@
 				}
 			},
 			"times": [
-				30
+				29
 			],
 			"allTests": [
 				{
@@ -1927,7 +1927,7 @@
 			"id": "43e9299a-2122-4e24-a20d-6ffd17104f5b",
 			"name": "CASE 1: Valid — Trainee auth → 200",
 			"url": "http://localhost:8080/api/training-types",
-			"time": 29,
+			"time": 27,
 			"responseCode": {
 				"code": 200,
 				"name": "OK"
@@ -1947,7 +1947,7 @@
 				}
 			},
 			"times": [
-				29
+				27
 			],
 			"allTests": [
 				{
@@ -1960,7 +1960,7 @@
 			"id": "ab4bcee9-5f3e-4ca5-bb9c-b3acb9b5f68b",
 			"name": "CASE 2: Valid — Trainer auth → 200",
 			"url": "http://localhost:8080/api/training-types",
-			"time": 41,
+			"time": 37,
 			"responseCode": {
 				"code": 200,
 				"name": "OK"
@@ -1980,7 +1980,7 @@
 				}
 			},
 			"times": [
-				41
+				37
 			],
 			"allTests": [
 				{
@@ -2018,7 +2018,7 @@
 		}
 	],
 	"count": 1,
-	"totalTime": 2033,
+	"totalTime": 1908,
 	"collection": {
 		"requests": [
 			{
