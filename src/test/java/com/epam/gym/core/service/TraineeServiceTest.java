@@ -114,39 +114,6 @@ class TraineeServiceTest {
     }
 
     @Test
-    void authenticate_ReturnTrueWhenCredentialsMatch() {
-        when(traineeRepository.existsByUserUsernameAndUserPassword("John.Doe", "secret")).thenReturn(true);
-
-        assertTrue(traineeService.authenticate("John.Doe", "secret"));
-    }
-
-    @Test
-    void authenticate_ReturnFalseWhenPasswordWrong() {
-        when(traineeRepository.existsByUserUsernameAndUserPassword("John.Doe", "wrong")).thenReturn(false);
-
-        assertFalse(traineeService.authenticate("John.Doe", "wrong"));
-    }
-
-    @Test
-    void authenticate_ReturnFalseWhenUserNotFound() {
-        when(traineeRepository.existsByUserUsernameAndUserPassword("unknown", "any")).thenReturn(false);
-
-        assertFalse(traineeService.authenticate("unknown", "any"));
-    }
-
-    @Test
-    void changePassword_UpdatePassword() {
-        Trainee trainee = traineeWithUser("John.Doe", "oldPass", true);
-        when(traineeRepository.findByUserUsername("John.Doe")).thenReturn(Optional.of(trainee));
-        when(traineeRepository.save(trainee)).thenReturn(trainee);
-
-        traineeService.changePassword("John.Doe", "newPass");
-
-        assertEquals("newPass", trainee.getUser().getPassword());
-        verify(traineeRepository).save(trainee);
-    }
-
-    @Test
     void activate_SetIsActiveTrue() {
         Trainee trainee = traineeWithUser("John.Doe", "pass", false);
         when(traineeRepository.findByUserUsername("John.Doe")).thenReturn(Optional.of(trainee));

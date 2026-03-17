@@ -67,7 +67,7 @@ public class TraineeController {
     public ResponseEntity<TraineeProfileResponse> getProfile(
             @Parameter(description = "Trainee username") @PathVariable String username,
             HttpServletRequest request) {
-        authHelper.authenticate(request, username);
+        authHelper.authenticateOwner(request, username);
         return ResponseEntity.ok(facade.getTraineeByUsername(username));
     }
 
@@ -81,7 +81,7 @@ public class TraineeController {
             @Parameter(description = "Trainee username") @PathVariable String username,
             @Valid @RequestBody UpdateTraineeRequest body,
             HttpServletRequest request) {
-        authHelper.authenticate(request, username);
+        authHelper.authenticateOwner(request, username);
         return ResponseEntity.ok(facade.updateTraineeProfile(
                 username, body.getFirstName(), body.getLastName(),
                 body.getDateOfBirth(), body.getAddress(), body.getIsActive()));
@@ -96,7 +96,7 @@ public class TraineeController {
     public ResponseEntity<Void> delete(
             @Parameter(description = "Trainee username") @PathVariable String username,
             HttpServletRequest request) {
-        authHelper.authenticate(request, username);
+        authHelper.authenticateOwner(request, username);
         facade.deleteTrainee(username);
         return ResponseEntity.ok().build();
     }
@@ -111,8 +111,8 @@ public class TraineeController {
             @Parameter(description = "Trainee username") @PathVariable String username,
             @Valid @RequestBody ActivateDeactivateRequest body,
             HttpServletRequest request) {
-        authHelper.authenticate(request, username);
-        if (Boolean.TRUE.equals(body.getIsActive())) {
+        authHelper.authenticateOwner(request, username);
+        if (body.getIsActive()) {
             facade.activateTrainee(username);
         } else {
             facade.deactivateTrainee(username);
@@ -127,7 +127,7 @@ public class TraineeController {
     public ResponseEntity<List<TrainerSummaryResponse>> getNotAssignedTrainers(
             @Parameter(description = "Trainee username") @PathVariable String username,
             HttpServletRequest request) {
-        authHelper.authenticate(request, username);
+        authHelper.authenticateOwner(request, username);
         return ResponseEntity.ok(facade.getNotAssignedTrainers(username));
     }
 
@@ -141,7 +141,7 @@ public class TraineeController {
             @Parameter(description = "Trainee username") @PathVariable String username,
             @Valid @RequestBody TraineeTrainersUpdateRequest body,
             HttpServletRequest request) {
-        authHelper.authenticate(request, username);
+        authHelper.authenticateOwner(request, username);
         return ResponseEntity.ok(facade.updateTraineeTrainers(
                 username, new HashSet<>(body.getTrainerUsernames())));
     }
@@ -157,7 +157,7 @@ public class TraineeController {
             @RequestParam(required = false) String trainerUsername,
             @RequestParam(required = false) String trainingType,
             HttpServletRequest request) {
-        authHelper.authenticate(request, username);
+        authHelper.authenticateOwner(request, username);
         return ResponseEntity.ok(facade.getTraineeTrainings(
                 username, periodFrom, periodTo, trainerUsername, trainingType));
     }

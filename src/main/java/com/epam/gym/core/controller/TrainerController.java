@@ -62,7 +62,7 @@ public class TrainerController {
     public ResponseEntity<TrainerProfileResponse> getProfile(
             @Parameter(description = "Trainer username") @PathVariable String username,
             HttpServletRequest request) {
-        authHelper.authenticate(request, username);
+        authHelper.authenticateOwner(request, username);
         return ResponseEntity.ok(facade.getTrainerByUsername(username));
     }
 
@@ -76,7 +76,7 @@ public class TrainerController {
             @Parameter(description = "Trainer username") @PathVariable String username,
             @Valid @RequestBody UpdateTrainerRequest body,
             HttpServletRequest request) {
-        authHelper.authenticate(request, username);
+        authHelper.authenticateOwner(request, username);
         return ResponseEntity.ok(facade.updateTrainerProfile(
                 username, body.getFirstName(), body.getLastName(), body.getIsActive()));
     }
@@ -91,8 +91,8 @@ public class TrainerController {
             @Parameter(description = "Trainer username") @PathVariable String username,
             @Valid @RequestBody ActivateDeactivateRequest body,
             HttpServletRequest request) {
-        authHelper.authenticate(request, username);
-        if (Boolean.TRUE.equals(body.getIsActive())) {
+        authHelper.authenticateOwner(request, username);
+        if (body.getIsActive()) {
             facade.activateTrainer(username);
         } else {
             facade.deactivateTrainer(username);
@@ -110,7 +110,7 @@ public class TrainerController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate periodTo,
             @RequestParam(required = false) String traineeUsername,
             HttpServletRequest request) {
-        authHelper.authenticate(request, username);
+        authHelper.authenticateOwner(request, username);
         return ResponseEntity.ok(facade.getTrainerTrainings(
                 username, periodFrom, periodTo, traineeUsername));
     }

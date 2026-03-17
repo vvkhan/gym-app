@@ -19,9 +19,11 @@ import com.epam.gym.core.model.Trainer;
 import com.epam.gym.core.service.TraineeService;
 import com.epam.gym.core.service.TrainerService;
 import com.epam.gym.core.service.TrainingService;
+import com.epam.gym.core.service.UserService;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Set;
@@ -31,6 +33,7 @@ import java.util.UUID;
 @Component
 public class GymFacade {
 
+    private final UserService userService;
     private final TraineeService traineeService;
     private final TrainerService trainerService;
     private final TrainingService trainingService;
@@ -40,7 +43,8 @@ public class GymFacade {
     private final TrainingMapper trainingMapper;
     private final TrainingTypeMapper trainingTypeMapper;
 
-    public GymFacade(TraineeService traineeService,
+    public GymFacade(UserService userService,
+                     TraineeService traineeService,
                      TrainerService trainerService,
                      TrainingService trainingService,
                      TraineeMapper traineeMapper,
@@ -48,6 +52,7 @@ public class GymFacade {
                      TrainerSummaryMapper trainerSummaryMapper,
                      TrainingMapper trainingMapper,
                      TrainingTypeMapper trainingTypeMapper) {
+        this.userService = userService;
         this.traineeService = traineeService;
         this.trainerService = trainerService;
         this.trainingService = trainingService;
@@ -62,12 +67,12 @@ public class GymFacade {
     // Authentication
     // -------------------------------------------------------------------------
 
-    public boolean authenticateTrainee(String username, String password) {
-        return traineeService.authenticate(username, password);
+    public boolean authenticateUser(String username, String password) {
+        return userService.authenticate(username, password);
     }
 
-    public boolean authenticateTrainer(String username, String password) {
-        return trainerService.authenticate(username, password);
+    public boolean isTrainee(String username) {
+        return traineeService.getTraineeByUsername(username).isPresent();
     }
 
     // -------------------------------------------------------------------------
@@ -100,13 +105,7 @@ public class GymFacade {
     }
 
     public void changePassword(String username, String newPassword) {
-        if (traineeService.getTraineeByUsername(username).isPresent()) {
-            traineeService.changePassword(username, newPassword);
-        } else if (trainerService.getTrainerByUsername(username).isPresent()) {
-            trainerService.changePassword(username, newPassword);
-        } else {
-            throw new NoSuchElementException("User not found: " + username);
-        }
+        userService.changePassword(username, newPassword);
     }
 
     public void activateTrainee(String username) {
@@ -120,26 +119,18 @@ public class GymFacade {
     public List<TrainingResponse> getTraineeTrainings(String username,
                                                       LocalDate fromDate, LocalDate toDate,
                                                       String trainerUsername, String trainingTypeName) {
-        return traineeService.getTrainings(username, fromDate, toDate, trainerUsername, trainingTypeName)
-                .stream()
-                .map(trainingMapper::toTraineeViewResponse)
-                .toList();
+        return trainingMapper.toTraineeViewResponse(
+                traineeService.getTrainings(username, fromDate, toDate, trainerUsername, trainingTypeName));
     }
 
     public List<TrainerSummaryResponse> getNotAssignedTrainers(String traineeUsername) {
-        return traineeService.getNotAssignedTrainers(traineeUsername)
-                .stream()
-                .map(trainerSummaryMapper::toDto)
-                .toList();
+        return trainerSummaryMapper.toDto(traineeService.getNotAssignedTrainers(traineeUsername));
     }
 
     public List<TrainerSummaryResponse> updateTraineeTrainers(String traineeUsername,
                                                               Set<String> trainerUsernames) {
         Trainee updated = traineeService.updateTrainers(traineeUsername, trainerUsernames);
-        return updated.getTrainers()
-                .stream()
-                .map(trainerSummaryMapper::toDto)
-                .toList();
+        return trainerSummaryMapper.toDto(new ArrayList<>(updated.getTrainers()));
     }
 
     // -------------------------------------------------------------------------
@@ -178,10 +169,8 @@ public class GymFacade {
     public List<TrainingResponse> getTrainerTrainings(String username,
                                                       LocalDate fromDate, LocalDate toDate,
                                                       String traineeUsername) {
-        return trainerService.getTrainings(username, fromDate, toDate, traineeUsername)
-                .stream()
-                .map(trainingMapper::toTrainerViewResponse)
-                .toList();
+        return trainingMapper.toTrainerViewResponse(
+                trainerService.getTrainings(username, fromDate, toDate, traineeUsername));
     }
 
     // -------------------------------------------------------------------------
@@ -199,9 +188,6 @@ public class GymFacade {
     }
 
     public List<TrainingTypeResponse> getAllTrainingTypes() {
-        return trainingService.getAllTrainingTypes()
-                .stream()
-                .map(trainingTypeMapper::toDto)
-                .toList();
+        return trainingTypeMapper.toDto(trainingService.getAllTrainingTypes());
     }
 }

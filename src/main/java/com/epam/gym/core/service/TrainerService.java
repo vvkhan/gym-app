@@ -86,17 +86,6 @@ public class TrainerService {
         return trainerRepository.findAll();
     }
 
-    public boolean authenticate(String username, String password) {
-        return trainerRepository.existsByUserUsernameAndUserPassword(username, password);
-    }
-
-    @Transactional
-    public void changePassword(String username, String newPassword) {
-        Trainer trainer = trainerRepository.findByUserUsername(username)
-                .orElseThrow(() -> new NoSuchElementException("Trainer not found: " + username));
-        trainer.getUser().setPassword(newPassword);
-        trainerRepository.save(trainer);
-    }
 
     @Transactional
     public void activate(String username) {

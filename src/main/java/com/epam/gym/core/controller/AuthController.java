@@ -2,7 +2,6 @@ package com.epam.gym.core.controller;
 
 import com.epam.gym.core.dto.request.ChangePasswordRequest;
 import com.epam.gym.core.facade.GymFacade;
-import com.epam.gym.core.util.CredentialsExtractor;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -21,9 +20,11 @@ import org.springframework.web.bind.annotation.RestController;
 public class AuthController {
 
     private final GymFacade facade;
+    private final AuthenticationHelper authHelper;
 
-    public AuthController(GymFacade facade) {
+    public AuthController(GymFacade facade, AuthenticationHelper authHelper) {
         this.facade = facade;
+        this.authHelper = authHelper;
     }
 
     @GetMapping("/login")
@@ -31,14 +32,7 @@ public class AuthController {
     @ApiResponse(responseCode = "200", description = "Authenticated successfully")
     @ApiResponse(responseCode = "401", description = "Invalid credentials")
     public ResponseEntity<Void> login(HttpServletRequest request) {
-        String[] credentials = CredentialsExtractor.extractCredentials(request);
-        String username = credentials[0];
-        String password = credentials[1];
-        boolean authenticated = facade.authenticateTrainee(username, password)
-                || facade.authenticateTrainer(username, password);
-        if (!authenticated) {
-            throw new SecurityException("Invalid username or password");
-        }
+        authHelper.authenticateAny(request);
         return ResponseEntity.ok().build();
     }
 
@@ -48,8 +42,7 @@ public class AuthController {
     @ApiResponse(responseCode = "400", description = "Validation error")
     @ApiResponse(responseCode = "401", description = "Invalid current password")
     public ResponseEntity<Void> changePassword(@Valid @RequestBody ChangePasswordRequest request) {
-        boolean authenticated = facade.authenticateTrainee(request.getUsername(), request.getOldPassword())
-                || facade.authenticateTrainer(request.getUsername(), request.getOldPassword());
+        boolean authenticated = facade.authenticateUser(request.getUsername(), request.getOldPassword());
         if (!authenticated) {
             throw new SecurityException("Invalid username or password");
         }

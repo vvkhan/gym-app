@@ -93,18 +93,6 @@ public class TraineeService {
         return traineeRepository.findAll();
     }
 
-    public boolean authenticate(String username, String password) {
-        return traineeRepository.existsByUserUsernameAndUserPassword(username, password);
-    }
-
-    @Transactional
-    public void changePassword(String username, String newPassword) {
-        Trainee trainee = traineeRepository.findByUserUsername(username)
-                .orElseThrow(() -> new NoSuchElementException("Trainee not found: " + username));
-        trainee.getUser().setPassword(newPassword);
-        traineeRepository.save(trainee);
-    }
-
     @Transactional
     public void activate(String username) {
         Trainee trainee = traineeRepository.findByUserUsername(username)
