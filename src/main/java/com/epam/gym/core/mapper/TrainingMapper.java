@@ -7,7 +7,9 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.Named;
 
-@Mapper(componentModel = "spring")
+import java.util.List;
+
+@Mapper
 public interface TrainingMapper {
 
     // Trainee's perspective: partner is the trainer
@@ -19,6 +21,14 @@ public interface TrainingMapper {
     @Mapping(source = "trainingType.trainingTypeName", target = "trainingType")
     @Mapping(source = "trainee.user", target = "partnerName", qualifiedByName = "fullName")
     TrainingResponse toTrainerViewResponse(Training training);
+
+    default List<TrainingResponse> toTraineeViewResponse(List<Training> trainings) {
+        return trainings.stream().map(this::toTraineeViewResponse).toList();
+    }
+
+    default List<TrainingResponse> toTrainerViewResponse(List<Training> trainings) {
+        return trainings.stream().map(this::toTrainerViewResponse).toList();
+    }
 
     @Named("fullName")
     default String fullName(User user) {

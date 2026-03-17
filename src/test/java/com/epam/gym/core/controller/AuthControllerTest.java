@@ -14,12 +14,15 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.MediaType;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
 
 import java.util.Base64;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -33,6 +36,9 @@ class AuthControllerTest {
 
     @Mock
     private GymFacade facade;
+
+    @Mock
+    private AuthenticationHelper authHelper;
 
     @InjectMocks
     private AuthController controller;
@@ -60,8 +66,6 @@ class AuthControllerTest {
 
     @Test
     void login_validTraineeCredentialsReturns200() throws Exception {
-        when(facade.authenticateTrainee("alice", "pass")).thenReturn(true);
-
         mockMvc.perform(get("/api/auth/login")
                         .header("Authorization", basicAuth("alice", "pass")))
                 .andExpect(status().isOk());
@@ -69,9 +73,6 @@ class AuthControllerTest {
 
     @Test
     void login_validTrainerCredentialsReturns200() throws Exception {
-        when(facade.authenticateTrainee("john", "pass")).thenReturn(false);
-        when(facade.authenticateTrainer("john", "pass")).thenReturn(true);
-
         mockMvc.perform(get("/api/auth/login")
                         .header("Authorization", basicAuth("john", "pass")))
                 .andExpect(status().isOk());
@@ -79,8 +80,8 @@ class AuthControllerTest {
 
     @Test
     void login_invalidCredentialsReturns401() throws Exception {
-        when(facade.authenticateTrainee("nobody", "wrong")).thenReturn(false);
-        when(facade.authenticateTrainer("nobody", "wrong")).thenReturn(false);
+        doThrow(new SecurityException("Invalid username or password"))
+                .when(authHelper).authenticateAny(any(HttpServletRequest.class));
 
         mockMvc.perform(get("/api/auth/login")
                         .header("Authorization", basicAuth("nobody", "wrong")))
@@ -90,13 +91,16 @@ class AuthControllerTest {
 
     @Test
     void login_missingAuthHeaderReturns401() throws Exception {
+        doThrow(new SecurityException("Missing authorization header"))
+                .when(authHelper).authenticateAny(any(HttpServletRequest.class));
+
         mockMvc.perform(get("/api/auth/login"))
                 .andExpect(status().isUnauthorized());
     }
 
     @Test
     void changePassword_validTraineeRequestReturns200() throws Exception {
-        when(facade.authenticateTrainee("alice", "oldPass")).thenReturn(true);
+        when(facade.authenticateUser("alice", "oldPass")).thenReturn(true);
 
         ChangePasswordRequest request = new ChangePasswordRequest();
         request.setUsername("alice");
@@ -113,8 +117,7 @@ class AuthControllerTest {
 
     @Test
     void changePassword_validTrainerRequestReturns200() throws Exception {
-        when(facade.authenticateTrainee("john", "oldPass")).thenReturn(false);
-        when(facade.authenticateTrainer("john", "oldPass")).thenReturn(true);
+        when(facade.authenticateUser("john", "oldPass")).thenReturn(true);
 
         ChangePasswordRequest request = new ChangePasswordRequest();
         request.setUsername("john");
@@ -131,8 +134,7 @@ class AuthControllerTest {
 
     @Test
     void changePassword_wrongOldPasswordReturns401() throws Exception {
-        when(facade.authenticateTrainee("alice", "wrongPass")).thenReturn(false);
-        when(facade.authenticateTrainer("alice", "wrongPass")).thenReturn(false);
+        when(facade.authenticateUser("alice", "wrongPass")).thenReturn(false);
 
         ChangePasswordRequest request = new ChangePasswordRequest();
         request.setUsername("alice");

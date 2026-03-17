@@ -4,6 +4,7 @@ import com.epam.gym.core.dto.response.TrainingTypeResponse;
 import com.epam.gym.core.exception.handler.RestExceptionHandler;
 import com.epam.gym.core.facade.GymFacade;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -18,6 +19,8 @@ import java.util.Base64;
 import java.util.List;
 import java.util.UUID;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -28,6 +31,9 @@ class TrainingTypeControllerTest {
 
     @Mock
     private GymFacade facade;
+
+    @Mock
+    private AuthenticationHelper authHelper;
 
     @InjectMocks
     private TrainingTypeController controller;
@@ -48,8 +54,6 @@ class TrainingTypeControllerTest {
 
     @Test
     void getAll_validTraineeReturnsTypes() throws Exception {
-        when(facade.authenticateTrainee("alice", "pass")).thenReturn(true);
-
         TrainingTypeResponse yoga = new TrainingTypeResponse();
         yoga.setId(UUID.randomUUID());
         yoga.setTrainingTypeName("Yoga");
@@ -69,8 +73,6 @@ class TrainingTypeControllerTest {
 
     @Test
     void getAll_validTrainerReturnsTypes() throws Exception {
-        when(facade.authenticateTrainee("john", "pass")).thenReturn(false);
-        when(facade.authenticateTrainer("john", "pass")).thenReturn(true);
         when(facade.getAllTrainingTypes()).thenReturn(List.of());
 
         mockMvc.perform(get("/api/training-types")
@@ -79,7 +81,20 @@ class TrainingTypeControllerTest {
     }
 
     @Test
+    void getAll_invalidCredentialsReturns401() throws Exception {
+        doThrow(new SecurityException("Invalid username or password"))
+                .when(authHelper).authenticateAny(any(HttpServletRequest.class));
+
+        mockMvc.perform(get("/api/training-types")
+                        .header("Authorization", basicAuth("nobody", "wrong")))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
     void getAll_missingAuthHeaderReturns401() throws Exception {
+        doThrow(new SecurityException("Missing authorization header"))
+                .when(authHelper).authenticateAny(any(HttpServletRequest.class));
+
         mockMvc.perform(get("/api/training-types"))
                 .andExpect(status().isUnauthorized());
     }

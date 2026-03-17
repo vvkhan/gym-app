@@ -152,39 +152,6 @@ class TrainerServiceTest {
     }
 
     @Test
-    void authenticate_ReturnTrueWhenCredentialsMatch() {
-        when(trainerRepository.existsByUserUsernameAndUserPassword("John.Smith", "secret")).thenReturn(true);
-
-        assertTrue(trainerService.authenticate("John.Smith", "secret"));
-    }
-
-    @Test
-    void authenticate_ReturnFalseWhenPasswordWrong() {
-        when(trainerRepository.existsByUserUsernameAndUserPassword("John.Smith", "wrong")).thenReturn(false);
-
-        assertFalse(trainerService.authenticate("John.Smith", "wrong"));
-    }
-
-    @Test
-    void authenticate_ReturnFalseWhenUserNotFound() {
-        when(trainerRepository.existsByUserUsernameAndUserPassword("unknown", "any")).thenReturn(false);
-
-        assertFalse(trainerService.authenticate("unknown", "any"));
-    }
-
-    @Test
-    void changePassword_UpdatePassword() {
-        Trainer trainer = trainerWithUser("John.Smith", "oldPass", true);
-        when(trainerRepository.findByUserUsername("John.Smith")).thenReturn(Optional.of(trainer));
-        when(trainerRepository.save(trainer)).thenReturn(trainer);
-
-        trainerService.changePassword("John.Smith", "newPass");
-
-        assertEquals("newPass", trainer.getUser().getPassword());
-        verify(trainerRepository).save(trainer);
-    }
-
-    @Test
     void activate_SetIsActiveTrue() {
         Trainer trainer = trainerWithUser("John.Smith", "pass", false);
         when(trainerRepository.findByUserUsername("John.Smith")).thenReturn(Optional.of(trainer));

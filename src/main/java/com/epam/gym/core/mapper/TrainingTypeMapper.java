@@ -4,8 +4,12 @@ import com.epam.gym.core.dto.response.TrainingTypeResponse;
 import com.epam.gym.core.model.TrainingType;
 import org.mapstruct.Mapper;
 
-@Mapper(componentModel = "spring")
+import java.util.List;
+
+@Mapper
 public interface TrainingTypeMapper {
 
     TrainingTypeResponse toDto(TrainingType trainingType);
+
+    List<TrainingTypeResponse> toDto(List<TrainingType> trainingTypes);
 }

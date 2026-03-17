@@ -140,7 +140,7 @@ class TrainerControllerTest {
     @Test
     void getProfile_missingAuthHeaderReturns401() throws Exception {
         doThrow(new SecurityException("Missing Authorization header"))
-                .when(authHelper).authenticate(any(), any());
+                .when(authHelper).authenticateOwner(any(), any());
 
         mockMvc.perform(get("/api/trainers/john"))
                 .andExpect(status().isUnauthorized());
@@ -149,7 +149,7 @@ class TrainerControllerTest {
     @Test
     void getProfile_differentUserReturns401() throws Exception {
         doThrow(new SecurityException("Access denied"))
-                .when(authHelper).authenticate(any(), any());
+                .when(authHelper).authenticateOwner(any(), any());
 
         mockMvc.perform(get("/api/trainers/john")
                         .header("Authorization", basicAuth("alice", "pass")))

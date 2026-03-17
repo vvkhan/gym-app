@@ -122,7 +122,7 @@ class TraineeControllerTest {
     @Test
     void getProfile_missingAuthHeaderReturns401() throws Exception {
         doThrow(new SecurityException("Missing Authorization header"))
-                .when(authHelper).authenticate(any(), any());
+                .when(authHelper).authenticateOwner(any(), any());
 
         mockMvc.perform(get("/api/trainees/alice"))
                 .andExpect(status().isUnauthorized());
@@ -131,7 +131,7 @@ class TraineeControllerTest {
     @Test
     void getProfile_differentUserReturns401() throws Exception {
         doThrow(new SecurityException("Access denied"))
-                .when(authHelper).authenticate(any(), any());
+                .when(authHelper).authenticateOwner(any(), any());
 
         mockMvc.perform(get("/api/trainees/alice")
                         .header("Authorization", basicAuth("bob", "pass")))
@@ -141,7 +141,7 @@ class TraineeControllerTest {
     @Test
     void getProfile_wrongCredentialsReturns401() throws Exception {
         doThrow(new SecurityException("Invalid username or password"))
-                .when(authHelper).authenticate(any(), any());
+                .when(authHelper).authenticateOwner(any(), any());
 
         mockMvc.perform(get("/api/trainees/alice")
                         .header("Authorization", basicAuth("alice", "wrong")))

@@ -5,7 +5,7 @@ import com.epam.gym.core.model.Trainee;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
-@Mapper(componentModel = "spring")
+@Mapper
 public interface TraineeSummaryMapper {
 
     @Mapping(source = "user.username", target = "username")

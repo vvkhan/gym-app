@@ -34,56 +34,58 @@ class AuthenticationHelperTest {
         return new MockHttpServletRequest();
     }
 
-    // authenticate (any user)
+    // authenticateOwner (specific user)
 
     @Test
-    void authenticate_validTraineeCredentialsNoException() {
-        when(facade.authenticateTrainee("alice", "pass")).thenReturn(true);
+    void authenticateOwner_validCredentialsNoException() {
+        when(facade.authenticateUser("alice", "pass")).thenReturn(true);
 
-        assertDoesNotThrow(() -> authHelper.authenticate(requestWithAuth("alice", "pass"), "alice"));
+        assertDoesNotThrow(() -> authHelper.authenticateOwner(requestWithAuth("alice", "pass"), "alice"));
     }
 
     @Test
-    void authenticate_validTrainerCredentialsNoException() {
-        when(facade.authenticateTrainee("john", "pass")).thenReturn(false);
-        when(facade.authenticateTrainer("john", "pass")).thenReturn(true);
-
-        assertDoesNotThrow(() -> authHelper.authenticate(requestWithAuth("john", "pass"), "john"));
-    }
-
-    @Test
-    void authenticate_usernameMismatchThrowsAccessDenied() {
+    void authenticateOwner_usernameMismatchThrowsAccessDenied() {
         assertThrows(SecurityException.class,
-                () -> authHelper.authenticate(requestWithAuth("bob", "pass"), "alice"));
+                () -> authHelper.authenticateOwner(requestWithAuth("bob", "pass"), "alice"));
     }
 
     @Test
-    void authenticate_invalidCredentialsThrowsUnauthorized() {
-        when(facade.authenticateTrainee("alice", "wrong")).thenReturn(false);
-        when(facade.authenticateTrainer("alice", "wrong")).thenReturn(false);
+    void authenticateOwner_invalidCredentialsThrowsUnauthorized() {
+        when(facade.authenticateUser("alice", "wrong")).thenReturn(false);
 
         assertThrows(SecurityException.class,
-                () -> authHelper.authenticate(requestWithAuth("alice", "wrong"), "alice"));
+                () -> authHelper.authenticateOwner(requestWithAuth("alice", "wrong"), "alice"));
     }
 
     @Test
-    void authenticate_missingHeaderThrowsSecurityException() {
+    void authenticateOwner_missingHeaderThrowsSecurityException() {
         assertThrows(SecurityException.class,
-                () -> authHelper.authenticate(requestWithoutAuth(), "alice"));
+                () -> authHelper.authenticateOwner(requestWithoutAuth(), "alice"));
+    }
+
+    // authenticateAny (any valid user)
+
+    @Test
+    void authenticateAny_validCredentialsNoException() {
+        when(facade.authenticateUser("alice", "pass")).thenReturn(true);
+
+        assertDoesNotThrow(() -> authHelper.authenticateAny(requestWithAuth("alice", "pass")));
     }
 
     // authenticateTrainee (trainee only)
 
     @Test
     void authenticateTrainee_validCredentialsNoException() {
-        when(facade.authenticateTrainee("alice", "pass")).thenReturn(true);
+        when(facade.authenticateUser("alice", "pass")).thenReturn(true);
+        when(facade.isTrainee("alice")).thenReturn(true);
 
         assertDoesNotThrow(() -> authHelper.authenticateTrainee(requestWithAuth("alice", "pass"), "alice"));
     }
 
     @Test
-    void authenticateTrainee_trainerCredentialsThrowsUnauthorized() {
-        when(facade.authenticateTrainee("john", "pass")).thenReturn(false);
+    void authenticateTrainee_trainerCredentialsThrowsAccessDenied() {
+        when(facade.authenticateUser("john", "pass")).thenReturn(true);
+        when(facade.isTrainee("john")).thenReturn(false);
 
         assertThrows(SecurityException.class,
                 () -> authHelper.authenticateTrainee(requestWithAuth("john", "pass"), "john"));

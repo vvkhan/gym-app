@@ -2,7 +2,6 @@ package com.epam.gym.core.controller;
 
 import com.epam.gym.core.dto.response.TrainingTypeResponse;
 import com.epam.gym.core.facade.GymFacade;
-import com.epam.gym.core.util.CredentialsExtractor;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -20,9 +19,11 @@ import java.util.List;
 public class TrainingTypeController {
 
     private final GymFacade facade;
+    private final AuthenticationHelper authHelper;
 
-    public TrainingTypeController(GymFacade facade) {
+    public TrainingTypeController(GymFacade facade, AuthenticationHelper authHelper) {
         this.facade = facade;
+        this.authHelper = authHelper;
     }
 
     @GetMapping
@@ -30,12 +31,7 @@ public class TrainingTypeController {
     @ApiResponse(responseCode = "200", description = "Training types returned successfully")
     @ApiResponse(responseCode = "401", description = "Authentication failed")
     public ResponseEntity<List<TrainingTypeResponse>> getAll(HttpServletRequest request) {
-        String[] credentials = CredentialsExtractor.extractCredentials(request);
-        boolean ok = facade.authenticateTrainee(credentials[0], credentials[1])
-                || facade.authenticateTrainer(credentials[0], credentials[1]);
-        if (!ok) {
-            throw new SecurityException("Invalid username or password");
-        }
+        authHelper.authenticateAny(request);
         return ResponseEntity.ok(facade.getAllTrainingTypes());
     }
 }
