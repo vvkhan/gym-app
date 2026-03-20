@@ -36,8 +36,6 @@ public interface TrainerRepository extends JpaRepository<Trainer, UUID>,
 
     boolean existsByUserId(UUID userId);
 
-    boolean existsByUserUsernameAndUserPassword(String username, String password);
-
     @Query("select t.user.username from Trainer t " +
            "where t.user.username = :exact or t.user.username like :pattern")
     List<String> findUsernamesByPrefix(@Param("exact") String exact, @Param("pattern") String pattern);

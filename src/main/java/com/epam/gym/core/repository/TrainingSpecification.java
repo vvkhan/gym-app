@@ -14,7 +14,7 @@ public class TrainingSpecification {
 
     public static Specification<Training> byTraineeCriteria(
             String traineeUsername, LocalDate fromDate, LocalDate toDate,
-            String trainerName, String trainingTypeName) {
+            String trainerUsername, String trainingTypeName) {
 
         return (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
@@ -24,9 +24,9 @@ public class TrainingSpecification {
                 predicates.add(cb.greaterThanOrEqualTo(root.get("trainingDate"), fromDate));
             if (toDate != null)
                 predicates.add(cb.lessThanOrEqualTo(root.get("trainingDate"), toDate));
-            if (trainerName != null)
+            if (trainerUsername != null)
                 predicates.add(cb.equal(
-                        root.get("trainer").get("user").get("username"), trainerName));
+                        root.get("trainer").get("user").get("username"), trainerUsername));
             if (trainingTypeName != null)
                 predicates.add(cb.equal(
                         root.get("trainingType").get("trainingTypeName"), trainingTypeName));
@@ -35,7 +35,7 @@ public class TrainingSpecification {
     }
 
     public static Specification<Training> byTrainerCriteria(
-            String trainerUsername, LocalDate fromDate, LocalDate toDate, String traineeName) {
+            String trainerUsername, LocalDate fromDate, LocalDate toDate, String traineeUsername) {
 
         return (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
@@ -45,9 +45,9 @@ public class TrainingSpecification {
                 predicates.add(cb.greaterThanOrEqualTo(root.get("trainingDate"), fromDate));
             if (toDate != null)
                 predicates.add(cb.lessThanOrEqualTo(root.get("trainingDate"), toDate));
-            if (traineeName != null)
+            if (traineeUsername != null)
                 predicates.add(cb.equal(
-                        root.get("trainee").get("user").get("username"), traineeName));
+                        root.get("trainee").get("user").get("username"), traineeUsername));
             return cb.and(predicates.toArray(new Predicate[0]));
         };
     }

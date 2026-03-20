@@ -6,7 +6,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
 
-import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 @Getter
@@ -17,7 +17,14 @@ import java.util.UUID;
     name = Trainer.FULL_GRAPH,
     attributeNodes = {
         @NamedAttributeNode("user"),
-        @NamedAttributeNode("specialization")
+        @NamedAttributeNode("specialization"),
+        @NamedAttributeNode(value = "trainees", subgraph = "trainees-subgraph")
+    },
+    subgraphs = {
+        @NamedSubgraph(
+            name = "trainees-subgraph",
+            attributeNodes = @NamedAttributeNode("user")
+        )
     }
 )
 @Entity
@@ -40,5 +47,5 @@ public class Trainer {
     private User user;
 
     @ManyToMany(mappedBy = "trainers")
-    private List<Trainee> trainees;
+    private Set<Trainee> trainees;
 }

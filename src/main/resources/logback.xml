@@ -3,11 +3,17 @@
 
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
-            <pattern>%d{yyyy-MM-dd HH:mm:ss} %-5level %logger{20} - %msg%n</pattern>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss} %-5level [%X{transactionId:-NO_TX}] %logger{20} - %msg%n</pattern>
         </encoder>
     </appender>
 
+    <!-- Application code -->
     <logger name="com.epam.gym" level="DEBUG" additivity="false">
+        <appender-ref ref="CONSOLE" />
+    </logger>
+
+    <!-- REST call details: logs which endpoint was called and response status -->
+    <logger name="org.springframework.web.servlet.DispatcherServlet" level="DEBUG" additivity="false">
         <appender-ref ref="CONSOLE" />
     </logger>
 

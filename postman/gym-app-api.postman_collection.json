@@ -1,0 +1,3567 @@
+{
+  "info": {
+    "_postman_id": "gym-app-api",
+    "name": "Gym App API",
+    "description": "Run folders in order 1\u219217.\n- Folder 1 CASE 1 registers the trainee and saves credentials.\n- Folder 2 CASE 1 fetches training types automatically then registers the trainer.\n- Folder 7 CASE 1 re-registers the trainee automatically after deletion to restore state.\n- Folder 4 CASE 1 changes trainee password and updates the variable \u2014 all subsequent requests use the new password."
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080",
+      "type": "string"
+    },
+    {
+      "key": "traineeUsername",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "traineePassword",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "trainerUsername",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "trainerPassword",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "trainingTypeId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "trainingTypeName",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "auth": {
+    "type": "noauth"
+  },
+  "item": [
+    {
+      "name": "1. Trainee Registration",
+      "item": [
+        {
+          "name": "CASE 1: Valid \u2192 201",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 201', () => pm.response.to.have.status(201));",
+                  "const json = pm.response.json();",
+                  "pm.test('Response has username and password', () => {",
+                  "    pm.expect(json.username).to.be.a('string').that.is.not.empty;",
+                  "    pm.expect(json.password).to.be.a('string').that.is.not.empty;",
+                  "});",
+                  "pm.collectionVariables.set('traineeUsername', json.username);",
+                  "pm.collectionVariables.set('traineePassword', json.password);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"Alice\",\n  \"lastName\": \"Smith\",\n  \"dateOfBirth\": \"1990-05-15\",\n  \"address\": \"123 Main St\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/trainees",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "trainees"
+              ]
+            }
+          }
+        },
+        {
+          "name": "CASE 2: Missing firstName \u2192 400",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 400', () => pm.response.to.have.status(400));",
+                  "pm.test('Has error message', () => pm.expect(pm.response.json().message).to.be.a('string'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"lastName\": \"Smith\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/trainees",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "trainees"
+              ]
+            }
+          }
+        },
+        {
+          "name": "CASE 3: Missing lastName \u2192 400",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 400', () => pm.response.to.have.status(400));",
+                  "pm.test('Has error message', () => pm.expect(pm.response.json().message).to.be.a('string'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"Alice\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/trainees",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "trainees"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Trainer Registration",
+      "item": [
+        {
+          "name": "CASE 1: Valid \u2192 201",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const baseUrl = pm.collectionVariables.get('baseUrl');",
+                  "const user = pm.collectionVariables.get('traineeUsername');",
+                  "const pass = pm.collectionVariables.get('traineePassword');",
+                  "pm.sendRequest({",
+                  "    url: baseUrl + '/api/training-types',",
+                  "    method: 'GET',",
+                  "    header: [{ key: 'Authorization', value: 'Basic ' + btoa(user + ':' + pass) }]",
+                  "}, function(err, res) {",
+                  "    if (!err && res.code === 200) {",
+                  "        const types = res.json();",
+                  "        pm.collectionVariables.set('trainingTypeId',   types[0].id);",
+                  "        pm.collectionVariables.set('trainingTypeName', types[0].trainingTypeName);",
+                  "    }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 201', () => pm.response.to.have.status(201));",
+                  "const json = pm.response.json();",
+                  "pm.test('Response has username and password', () => {",
+                  "    pm.expect(json.username).to.be.a('string').that.is.not.empty;",
+                  "    pm.expect(json.password).to.be.a('string').that.is.not.empty;",
+                  "});",
+                  "pm.collectionVariables.set('trainerUsername', json.username);",
+                  "pm.collectionVariables.set('trainerPassword', json.password);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"John\",\n  \"lastName\": \"Smith\",\n  \"specializationId\": \"{{trainingTypeId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/trainers",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "trainers"
+              ]
+            }
+          }
+        },
+        {
+          "name": "CASE 2: Missing firstName \u2192 400",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"lastName\": \"Smith\",\n  \"specializationId\": \"{{trainingTypeId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/trainers",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "trainers"
+              ]
+            }
+          }
+        },
+        {
+          "name": "CASE 3: Missing specializationId \u2192 400",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"John\",\n  \"lastName\": \"Smith\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/trainers",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "trainers"
+              ]
+            }
+          }
+        },
+        {
+          "name": "CASE 4: Unknown specializationId \u2192 404",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 404', () => pm.response.to.have.status(404));",
+                  "pm.test('Has error message', () => pm.expect(pm.response.json().message).to.be.a('string'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"John\",\n  \"lastName\": \"Smith\",\n  \"specializationId\": \"00000000-0000-0000-0000-000000000000\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/trainers",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "trainers"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Login",
+      "item": [
+        {
+          "name": "CASE 1: Valid \u2014 Trainee \u2192 200",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{traineeUsername}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{traineePassword}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            }
+          }
+        },
+        {
+          "name": "CASE 2: Valid \u2014 Trainer \u2192 200",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{trainerUsername}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{trainerPassword}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            }
+          }
+        },
+        {
+          "name": "CASE 3: Invalid credentials \u2192 401",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 401', () => pm.response.to.have.status(401));",
+                  "pm.test('Has error message', () => pm.expect(pm.response.json().message).to.be.a('string'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{traineeUsername}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "wrongpassword",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            }
+          }
+        },
+        {
+          "name": "CASE 4: Missing Authorization header \u2192 401",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Change Login",
+      "item": [
+        {
+          "name": "CASE 1: Valid \u2192 200",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "pm.collectionVariables.set('traineePassword', 'newpass456');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{traineeUsername}}\",\n  \"oldPassword\": \"{{traineePassword}}\",\n  \"newPassword\": \"newpass456\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/password",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "password"
+              ]
+            }
+          }
+        },
+        {
+          "name": "CASE 2: Wrong old password \u2192 401",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{traineeUsername}}\",\n  \"oldPassword\": \"wrongoldpass\",\n  \"newPassword\": \"whatever\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/password",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "password"
+              ]
+            }
+          }
+        },
+        {
+          "name": "CASE 3: Missing newPassword \u2192 400",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{traineeUsername}}\",\n  \"oldPassword\": \"{{traineePassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/password",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "password"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Get Trainee Profile",
+      "item": [
+        {
+          "name": "CASE 1: Valid \u2192 200",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('Response has all required fields', () => {",
+                  "    pm.expect(json.firstName).to.be.a('string');",
+                  "    pm.expect(json.lastName).to.be.a('string');",
+                  "    pm.expect(json.isActive).to.be.a('boolean');",
+                  "    pm.expect(json.trainers).to.be.an('array');",
+                  "});",
+                  "if (json.trainers.length > 0) {",
+                  "    pm.test('Trainer entry has required fields', () => {",
+                  "        const t = json.trainers[0];",
+                  "        pm.expect(t.username).to.be.a('string');",
+                  "        pm.expect(t.firstName).to.be.a('string');",
+                  "        pm.expect(t.lastName).to.be.a('string');",
+                  "        pm.expect(t.specialization).to.be.an('object');",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{traineeUsername}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{traineePassword}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/trainees/{{traineeUsername}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "trainees",
+                "{{traineeUsername}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "CASE 2: Missing Authorization header \u2192 401",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/trainees/{{traineeUsername}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "trainees",
+                "{{traineeUsername}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "CASE 3: Wrong password \u2192 401",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{traineeUsername}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "wrongpassword",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/trainees/{{traineeUsername}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "trainees",
+                "{{traineeUsername}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "CASE 4: Different user (ownership check) \u2192 401",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{trainerUsername}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{trainerPassword}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/trainees/{{traineeUsername}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "trainees",
+                "{{traineeUsername}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "CASE 5: Trainer accessing own username on trainee endpoint \u2192 404",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 404', () => pm.response.to.have.status(404));",
+                  "pm.test('Error message present', () => {",
+                  "    pm.expect(pm.response.json().message).to.be.a('string').that.is.not.empty;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{trainerUsername}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{trainerPassword}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/trainees/{{trainerUsername}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "trainees",
+                "{{trainerUsername}}"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "6. Update Trainee Profile",
+      "item": [
+        {
+          "name": "CASE 1: Valid \u2192 200",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('Response has all required fields', () => {",
+                  "    pm.expect(json.username).to.be.a('string');",
+                  "    pm.expect(json.firstName).to.equal('Alice');",
+                  "    pm.expect(json.lastName).to.equal('Updated');",
+                  "    pm.expect(json.isActive).to.equal(true);",
+                  "    pm.expect(json.trainers).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{traineeUsername}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{traineePassword}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"Alice\",\n  \"lastName\": \"Updated\",\n  \"dateOfBirth\": \"1990-05-15\",\n  \"address\": \"456 New Ave\",\n  \"isActive\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/trainees/{{traineeUsername}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "trainees",
+                "{{traineeUsername}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "CASE 2: Missing isActive \u2192 400",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{traineeUsername}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{traineePassword}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"Alice\",\n  \"lastName\": \"Smith\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/trainees/{{traineeUsername}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "trainees",
+                "{{traineeUsername}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "CASE 3: Missing Authorization header \u2192 401",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"Alice\",\n  \"lastName\": \"Smith\",\n  \"isActive\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/trainees/{{traineeUsername}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "trainees",
+                "{{traineeUsername}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "CASE 4: Trainer credentials on trainee endpoint \u2192 404",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 404', () => pm.response.to.have.status(404));",
+                  "pm.test('Error message present', () => {",
+                  "    pm.expect(pm.response.json().message).to.be.a('string').that.is.not.empty;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{trainerUsername}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{trainerPassword}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"Test\",\n  \"lastName\": \"Test\",\n  \"isActive\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/trainees/{{trainerUsername}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "trainees",
+                "{{trainerUsername}}"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "7. Delete Trainee Profile",
+      "item": [
+        {
+          "name": "CASE 1: Valid \u2192 200 (re-registers trainee automatically)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "const baseUrl = pm.collectionVariables.get('baseUrl');",
+                  "pm.sendRequest({",
+                  "    url: baseUrl + '/api/trainees',",
+                  "    method: 'POST',",
+                  "    header: [{ key: 'Content-Type', value: 'application/json' }],",
+                  "    body: {",
+                  "        mode: 'raw',",
+                  "        raw: JSON.stringify({ firstName: 'Alice', lastName: 'Smith', dateOfBirth: '1990-05-15', address: '123 Main St' })",
+                  "    }",
+                  "}, function(err, res) {",
+                  "    if (!err && res.code === 201) {",
+                  "        const json = res.json();",
+                  "        pm.collectionVariables.set('traineeUsername', json.username);",
+                  "        pm.collectionVariables.set('traineePassword', json.password);",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{traineeUsername}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{traineePassword}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/trainees/{{traineeUsername}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "trainees",
+                "{{traineeUsername}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "CASE 2: Missing Authorization header \u2192 401",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/trainees/{{traineeUsername}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "trainees",
+                "{{traineeUsername}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "CASE 3: Trainer credentials on trainee endpoint \u2192 404",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 404', () => pm.response.to.have.status(404));",
+                  "pm.test('Error message present', () => {",
+                  "    pm.expect(pm.response.json().message).to.be.a('string').that.is.not.empty;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{trainerUsername}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{trainerPassword}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/trainees/{{trainerUsername}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "trainees",
+                "{{trainerUsername}}"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "8. Get Trainer Profile",
+      "item": [
+        {
+          "name": "CASE 1: Valid \u2192 200",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('Response has all required fields', () => {",
+                  "    pm.expect(json.firstName).to.be.a('string');",
+                  "    pm.expect(json.lastName).to.be.a('string');",
+                  "    pm.expect(json.specialization).to.be.an('object');",
+                  "    pm.expect(json.isActive).to.be.a('boolean');",
+                  "    pm.expect(json.trainees).to.be.an('array');",
+                  "});",
+                  "if (json.trainees.length > 0) {",
+                  "    pm.test('Trainee entry has required fields', () => {",
+                  "        const t = json.trainees[0];",
+                  "        pm.expect(t.username).to.be.a('string');",
+                  "        pm.expect(t.firstName).to.be.a('string');",
+                  "        pm.expect(t.lastName).to.be.a('string');",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{trainerUsername}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{trainerPassword}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/trainers/{{trainerUsername}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "trainers",
+                "{{trainerUsername}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "CASE 2: Missing Authorization header \u2192 401",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/trainers/{{trainerUsername}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "trainers",
+                "{{trainerUsername}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "CASE 3: Wrong password \u2192 401",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{trainerUsername}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "wrongpassword",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/trainers/{{trainerUsername}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "trainers",
+                "{{trainerUsername}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "CASE 4: Different user (ownership check) \u2192 401",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{traineeUsername}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{traineePassword}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/trainers/{{trainerUsername}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "trainers",
+                "{{trainerUsername}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "CASE 5: Trainee credentials on trainer endpoint \u2192 404",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 404', () => pm.response.to.have.status(404));",
+                  "pm.test('Error message present', () => {",
+                  "    pm.expect(pm.response.json().message).to.be.a('string').that.is.not.empty;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{traineeUsername}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{traineePassword}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/trainers/{{traineeUsername}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "trainers",
+                "{{traineeUsername}}"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "9. Update Trainer Profile",
+      "item": [
+        {
+          "name": "CASE 1: Valid \u2192 200",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('Response has all required fields', () => {",
+                  "    pm.expect(json.username).to.be.a('string');",
+                  "    pm.expect(json.firstName).to.equal('John');",
+                  "    pm.expect(json.lastName).to.equal('Updated');",
+                  "    pm.expect(json.specialization).to.be.an('object');",
+                  "    pm.expect(json.isActive).to.equal(true);",
+                  "    pm.expect(json.trainees).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{trainerUsername}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{trainerPassword}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"John\",\n  \"lastName\": \"Updated\",\n  \"isActive\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/trainers/{{trainerUsername}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "trainers",
+                "{{trainerUsername}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "CASE 2: Missing firstName \u2192 400",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{trainerUsername}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{trainerPassword}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"lastName\": \"Smith\",\n  \"isActive\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/trainers/{{trainerUsername}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "trainers",
+                "{{trainerUsername}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "CASE 3: Missing Authorization header \u2192 401",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"John\",\n  \"lastName\": \"Smith\",\n  \"isActive\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/trainers/{{trainerUsername}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "trainers",
+                "{{trainerUsername}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "CASE 4: Trainee credentials on trainer endpoint \u2192 404",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 404', () => pm.response.to.have.status(404));",
+                  "pm.test('Error message present', () => {",
+                  "    pm.expect(pm.response.json().message).to.be.a('string').that.is.not.empty;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{traineeUsername}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{traineePassword}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"Test\",\n  \"lastName\": \"Test\",\n  \"isActive\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/trainers/{{traineeUsername}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "trainers",
+                "{{traineeUsername}}"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "10. Get Not-Assigned Active Trainers",
+      "item": [
+        {
+          "name": "CASE 1: Valid \u2192 200",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('Returns array of trainers', () => pm.expect(json).to.be.an('array'));",
+                  "if (json.length > 0) {",
+                  "    pm.test('Trainer entry has required fields', () => {",
+                  "        const t = json[0];",
+                  "        pm.expect(t.username).to.be.a('string');",
+                  "        pm.expect(t.firstName).to.be.a('string');",
+                  "        pm.expect(t.lastName).to.be.a('string');",
+                  "        pm.expect(t.specialization).to.be.an('object');",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{traineeUsername}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{traineePassword}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/trainees/{{traineeUsername}}/not-assigned-trainers",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "trainees",
+                "{{traineeUsername}}",
+                "not-assigned-trainers"
+              ]
+            }
+          }
+        },
+        {
+          "name": "CASE 2: Missing Authorization header \u2192 401",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/trainees/{{traineeUsername}}/not-assigned-trainers",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "trainees",
+                "{{traineeUsername}}",
+                "not-assigned-trainers"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "11. Update Trainee's Trainer List",
+      "item": [
+        {
+          "name": "CASE 1: Valid \u2192 200",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('Returns array with assigned trainer', () => {",
+                  "    pm.expect(json).to.be.an('array');",
+                  "    pm.expect(json.length).to.equal(1);",
+                  "    pm.expect(json[0].username).to.equal(pm.collectionVariables.get('trainerUsername'));",
+                  "    pm.expect(json[0].firstName).to.be.a('string');",
+                  "    pm.expect(json[0].lastName).to.be.a('string');",
+                  "    pm.expect(json[0].specialization).to.be.an('object');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{traineeUsername}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{traineePassword}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"trainerUsernames\": [\"{{trainerUsername}}\"]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/trainees/{{traineeUsername}}/trainers",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "trainees",
+                "{{traineeUsername}}",
+                "trainers"
+              ]
+            }
+          }
+        },
+        {
+          "name": "CASE 2: Empty trainerUsernames list \u2192 400",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{traineeUsername}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{traineePassword}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"trainerUsernames\": []\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/trainees/{{traineeUsername}}/trainers",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "trainees",
+                "{{traineeUsername}}",
+                "trainers"
+              ]
+            }
+          }
+        },
+        {
+          "name": "CASE 3: Trainer not found \u2192 404",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 404', () => pm.response.to.have.status(404));",
+                  "pm.test('Has error message', () => pm.expect(pm.response.json().message).to.be.a('string'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{traineeUsername}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{traineePassword}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"trainerUsernames\": [\"ghost.trainer.999\"]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/trainees/{{traineeUsername}}/trainers",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "trainees",
+                "{{traineeUsername}}",
+                "trainers"
+              ]
+            }
+          }
+        },
+        {
+          "name": "CASE 4: Missing Authorization header \u2192 401",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"trainerUsernames\": [\"{{trainerUsername}}\"]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/trainees/{{traineeUsername}}/trainers",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "trainees",
+                "{{traineeUsername}}",
+                "trainers"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "12. Get Trainee Trainings List",
+      "item": [
+        {
+          "name": "CASE 1: Valid \u2014 no filters \u2192 200",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('Returns array', () => pm.expect(json).to.be.an('array'));",
+                  "if (json.length > 0) {",
+                  "    pm.test('Training entry has required fields', () => {",
+                  "        const t = json[0];",
+                  "        pm.expect(t.trainingName).to.be.a('string');",
+                  "        pm.expect(t.trainingDate).to.be.a('string');",
+                  "        pm.expect(t.trainingType).to.exist;",
+                  "        pm.expect(t.duration).to.be.a('number');",
+                  "        pm.expect(t.partnerName).to.be.a('string');",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{traineeUsername}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{traineePassword}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/trainees/{{traineeUsername}}/trainings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "trainees",
+                "{{traineeUsername}}",
+                "trainings"
+              ]
+            }
+          }
+        },
+        {
+          "name": "CASE 2: Valid \u2014 with all filters \u2192 200",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Returns array', () => pm.expect(pm.response.json()).to.be.an('array'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{traineeUsername}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{traineePassword}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/trainees/{{traineeUsername}}/trainings?periodFrom=2025-01-01&periodTo=2025-12-31&trainerUsername={{trainerUsername}}&trainingType={{trainingTypeName}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "trainees",
+                "{{traineeUsername}}",
+                "trainings"
+              ],
+              "query": [
+                {
+                  "key": "periodFrom",
+                  "value": "2025-01-01"
+                },
+                {
+                  "key": "periodTo",
+                  "value": "2025-12-31"
+                },
+                {
+                  "key": "trainerUsername",
+                  "value": "{{trainerUsername}}"
+                },
+                {
+                  "key": "trainingType",
+                  "value": "{{trainingTypeName}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "CASE 3: Missing Authorization header \u2192 401",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/trainees/{{traineeUsername}}/trainings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "trainees",
+                "{{traineeUsername}}",
+                "trainings"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "13. Get Trainer Trainings List",
+      "item": [
+        {
+          "name": "CASE 1: Valid \u2014 no filters \u2192 200",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('Returns array', () => pm.expect(json).to.be.an('array'));",
+                  "if (json.length > 0) {",
+                  "    pm.test('Training entry has required fields', () => {",
+                  "        const t = json[0];",
+                  "        pm.expect(t.trainingName).to.be.a('string');",
+                  "        pm.expect(t.trainingDate).to.be.a('string');",
+                  "        pm.expect(t.trainingType).to.exist;",
+                  "        pm.expect(t.duration).to.be.a('number');",
+                  "        pm.expect(t.partnerName).to.be.a('string');",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{trainerUsername}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{trainerPassword}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/trainers/{{trainerUsername}}/trainings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "trainers",
+                "{{trainerUsername}}",
+                "trainings"
+              ]
+            }
+          }
+        },
+        {
+          "name": "CASE 2: Valid \u2014 with filters \u2192 200",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Returns array', () => pm.expect(pm.response.json()).to.be.an('array'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{trainerUsername}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{trainerPassword}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/trainers/{{trainerUsername}}/trainings?periodFrom=2025-01-01&periodTo=2025-12-31&traineeUsername={{traineeUsername}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "trainers",
+                "{{trainerUsername}}",
+                "trainings"
+              ],
+              "query": [
+                {
+                  "key": "periodFrom",
+                  "value": "2025-01-01"
+                },
+                {
+                  "key": "periodTo",
+                  "value": "2025-12-31"
+                },
+                {
+                  "key": "traineeUsername",
+                  "value": "{{traineeUsername}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "CASE 3: Missing Authorization header \u2192 401",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/trainers/{{trainerUsername}}/trainings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "trainers",
+                "{{trainerUsername}}",
+                "trainings"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "14. Add Training",
+      "item": [
+        {
+          "name": "CASE 1: Valid \u2192 200",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{traineeUsername}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{traineePassword}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"traineeUsername\": \"{{traineeUsername}}\",\n  \"trainerUsername\": \"{{trainerUsername}}\",\n  \"trainingName\": \"Morning Session\",\n  \"trainingDate\": \"2025-06-15\",\n  \"duration\": 60\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/trainings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "trainings"
+              ]
+            }
+          }
+        },
+        {
+          "name": "CASE 2: Missing trainingName \u2192 400",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{traineeUsername}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{traineePassword}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"traineeUsername\": \"{{traineeUsername}}\",\n  \"trainerUsername\": \"{{trainerUsername}}\",\n  \"trainingDate\": \"2025-06-15\",\n  \"duration\": 60\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/trainings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "trainings"
+              ]
+            }
+          }
+        },
+        {
+          "name": "CASE 3: Missing Authorization header \u2192 401",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"traineeUsername\": \"{{traineeUsername}}\",\n  \"trainerUsername\": \"{{trainerUsername}}\",\n  \"trainingName\": \"Morning Session\",\n  \"trainingDate\": \"2025-06-15\",\n  \"duration\": 60\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/trainings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "trainings"
+              ]
+            }
+          }
+        },
+        {
+          "name": "CASE 4: Wrong credentials \u2192 401",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{traineeUsername}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "wrongpassword",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"traineeUsername\": \"{{traineeUsername}}\",\n  \"trainerUsername\": \"{{trainerUsername}}\",\n  \"trainingName\": \"Morning Session\",\n  \"trainingDate\": \"2025-06-15\",\n  \"duration\": 60\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/trainings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "trainings"
+              ]
+            }
+          }
+        },
+        {
+          "name": "CASE 5: Different trainee (ownership check) \u2192 401",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{trainerUsername}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{trainerPassword}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"traineeUsername\": \"{{traineeUsername}}\",\n  \"trainerUsername\": \"{{trainerUsername}}\",\n  \"trainingName\": \"Morning Session\",\n  \"trainingDate\": \"2025-06-15\",\n  \"duration\": 60\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/trainings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "trainings"
+              ]
+            }
+          }
+        },
+        {
+          "name": "CASE 6: Non-existent trainer username \u2192 404",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 404', () => pm.response.to.have.status(404));",
+                  "pm.test('Error message present', () => {",
+                  "    pm.expect(pm.response.json().message).to.be.a('string').that.is.not.empty;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{traineeUsername}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{traineePassword}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"traineeUsername\": \"{{traineeUsername}}\",\n  \"trainerUsername\": \"nonexistent.trainer\",\n  \"trainingName\": \"Test Training\",\n  \"trainingDate\": \"2024-06-15\",\n  \"duration\": 60\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/trainings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "trainings"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "15. Activate/De-Activate Trainee",
+      "item": [
+        {
+          "name": "CASE 1: Deactivate \u2192 200",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{traineeUsername}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{traineePassword}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"isActive\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/trainees/{{traineeUsername}}/activate",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "trainees",
+                "{{traineeUsername}}",
+                "activate"
+              ]
+            }
+          }
+        },
+        {
+          "name": "CASE 2: Already inactive \u2192 409",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 409', () => pm.response.to.have.status(409));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{traineeUsername}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{traineePassword}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"isActive\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/trainees/{{traineeUsername}}/activate",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "trainees",
+                "{{traineeUsername}}",
+                "activate"
+              ]
+            }
+          }
+        },
+        {
+          "name": "CASE 3: Activate \u2192 200",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{traineeUsername}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{traineePassword}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"isActive\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/trainees/{{traineeUsername}}/activate",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "trainees",
+                "{{traineeUsername}}",
+                "activate"
+              ]
+            }
+          }
+        },
+        {
+          "name": "CASE 4: Already active \u2192 409",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 409', () => pm.response.to.have.status(409));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{traineeUsername}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{traineePassword}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"isActive\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/trainees/{{traineeUsername}}/activate",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "trainees",
+                "{{traineeUsername}}",
+                "activate"
+              ]
+            }
+          }
+        },
+        {
+          "name": "CASE 5: Missing Authorization header \u2192 401",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"isActive\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/trainees/{{traineeUsername}}/activate",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "trainees",
+                "{{traineeUsername}}",
+                "activate"
+              ]
+            }
+          }
+        },
+        {
+          "name": "CASE 6: Trainer credentials on trainee endpoint \u2192 404",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 404', () => pm.response.to.have.status(404));",
+                  "pm.test('Error message present', () => {",
+                  "    pm.expect(pm.response.json().message).to.be.a('string').that.is.not.empty;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{trainerUsername}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{trainerPassword}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"isActive\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/trainees/{{trainerUsername}}/activate",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "trainees",
+                "{{trainerUsername}}",
+                "activate"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "16. Activate/De-Activate Trainer",
+      "item": [
+        {
+          "name": "CASE 1: Deactivate \u2192 200",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{trainerUsername}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{trainerPassword}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"isActive\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/trainers/{{trainerUsername}}/activate",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "trainers",
+                "{{trainerUsername}}",
+                "activate"
+              ]
+            }
+          }
+        },
+        {
+          "name": "CASE 2: Already inactive \u2192 409",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 409', () => pm.response.to.have.status(409));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{trainerUsername}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{trainerPassword}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"isActive\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/trainers/{{trainerUsername}}/activate",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "trainers",
+                "{{trainerUsername}}",
+                "activate"
+              ]
+            }
+          }
+        },
+        {
+          "name": "CASE 3: Activate \u2192 200",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{trainerUsername}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{trainerPassword}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"isActive\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/trainers/{{trainerUsername}}/activate",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "trainers",
+                "{{trainerUsername}}",
+                "activate"
+              ]
+            }
+          }
+        },
+        {
+          "name": "CASE 4: Already active \u2192 409",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 409', () => pm.response.to.have.status(409));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{trainerUsername}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{trainerPassword}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"isActive\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/trainers/{{trainerUsername}}/activate",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "trainers",
+                "{{trainerUsername}}",
+                "activate"
+              ]
+            }
+          }
+        },
+        {
+          "name": "CASE 5: Missing Authorization header \u2192 401",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"isActive\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/trainers/{{trainerUsername}}/activate",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "trainers",
+                "{{trainerUsername}}",
+                "activate"
+              ]
+            }
+          }
+        },
+        {
+          "name": "CASE 6: Trainee credentials on trainer endpoint \u2192 404",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 404', () => pm.response.to.have.status(404));",
+                  "pm.test('Error message present', () => {",
+                  "    pm.expect(pm.response.json().message).to.be.a('string').that.is.not.empty;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{traineeUsername}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{traineePassword}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"isActive\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/trainers/{{traineeUsername}}/activate",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "trainers",
+                "{{traineeUsername}}",
+                "activate"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "17. Get Training Types",
+      "item": [
+        {
+          "name": "CASE 1: Valid \u2014 Trainee auth \u2192 200",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('Returns non-empty array of training types', () => {",
+                  "    pm.expect(json).to.be.an('array').that.is.not.empty;",
+                  "    pm.expect(json[0].id).to.be.a('string');",
+                  "    pm.expect(json[0].trainingTypeName).to.be.a('string');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{traineeUsername}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{traineePassword}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/training-types",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "training-types"
+              ]
+            }
+          }
+        },
+        {
+          "name": "CASE 2: Valid \u2014 Trainer auth \u2192 200",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Returns non-empty array', () => pm.expect(pm.response.json()).to.be.an('array').that.is.not.empty);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{trainerUsername}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{trainerPassword}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/training-types",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "training-types"
+              ]
+            }
+          }
+        },
+        {
+          "name": "CASE 3: Missing Authorization header \u2192 401",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/training-types",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "training-types"
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
