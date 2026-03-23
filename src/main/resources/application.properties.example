@@ -1,7 +1,30 @@
 # Gym Application Configuration
 # Copy this file to application.properties and fill in your actual values
 
-# Database
-db.url=jdbc:postgresql://localhost:5432/your_db_name
-db.username=your_username
-db.password=your_password
+# DataSource
+spring.datasource.url=jdbc:postgresql://localhost:5432/your_db_name
+spring.datasource.username=your_username
+spring.datasource.password=your_password
+spring.datasource.driver-class-name=org.postgresql.Driver
+
+# JPA / Hibernate
+spring.jpa.hibernate.ddl-auto=validate
+spring.jpa.show-sql=true
+spring.jpa.properties.hibernate.format_sql=true
+spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect
+
+# Flyway
+spring.flyway.locations=classpath:db/migration
+
+# Jackson
+spring.jackson.serialization.write-dates-as-timestamps=false
+
+# Server
+server.port=8080
+
+# Logging
+logging.level.com.epam.gym=DEBUG
+
+# Actuator
+management.endpoints.web.exposure.include=health,prometheus
+management.endpoint.health.show-details=always
