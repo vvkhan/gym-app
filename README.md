@@ -24,15 +24,15 @@ Unit tests for `model`, `dto`, `mapper` and `facade` classes were not implemente
 
 | Profile | Use case | Credentials |
 |---------|----------|-------------|
-| *(none)* | Local development | `application.properties` (gitignored) |
+| `local` | Local development | `application-local.yaml` (gitignored) |
 | `dev` | Development server | `DB_URL`, `DB_USERNAME`, `DB_PASSWORD` env vars |
 | `stg` | Staging server | `DB_URL`, `DB_USERNAME`, `DB_PASSWORD` env vars |
 | `prod` | Production | `DB_URL`, `DB_USERNAME`, `DB_PASSWORD` env vars |
 
 ***Steps:***
-- Copy `src/main/resources/application.yaml.example` to `src/main/resources/application.yaml` and fill in your database credentials
+- Copy `src/main/resources/application-local.yaml.example` to `src/main/resources/application-local.yaml` and fill in your database credentials
 - Build the JAR with `./mvnw package -DskipTests`
-- Run locally with `java -jar target/gym-app-1.0.0-SNAPSHOT.jar`
+- Run locally with `java -jar target/gym-app-1.0.0-SNAPSHOT.jar --spring.profiles.active=local`
 - Run with a profile with `java -jar target/gym-app-1.0.0-SNAPSHOT.jar --spring.profiles.active=dev`
 - The application will be available at `http://localhost:8080/api/...`
 - Import Postman collection and run it (final test run result as well as console logs are attached for the convenience)
