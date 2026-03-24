@@ -30,7 +30,7 @@ Unit tests for `model`, `dto`, `mapper` and `facade` classes were not implemente
 | `prod` | Production | `DB_URL`, `DB_USERNAME`, `DB_PASSWORD` env vars |
 
 ***Steps:***
-- Copy `src/main/resources/application.properties.example` to `src/main/resources/application.properties` and fill in your database credentials
+- Copy `src/main/resources/application.yaml.example` to `src/main/resources/application.yaml` and fill in your database credentials
 - Build the JAR with `./mvnw package -DskipTests`
 - Run locally with `java -jar target/gym-app-1.0.0-SNAPSHOT.jar`
 - Run with a profile with `java -jar target/gym-app-1.0.0-SNAPSHOT.jar --spring.profiles.active=dev`
@@ -42,6 +42,8 @@ Unit tests for `model`, `dto`, `mapper` and `facade` classes were not implemente
 ***Swagger UI:***
 
 Interactive API documentation is available at `http://localhost:8080/swagger-ui.html` once the application is running.
+
+If Swagger UI opens but shows an invalid-definition error, check `http://localhost:8080/v3/api-docs` directly. The response must start with an `openapi` field. If it does not, run a clean rebuild with `./mvnw clean package -DskipTests` and verify the application starts with the expected config and database connection.
 
 
 ***Metrics (Prometheus):***
