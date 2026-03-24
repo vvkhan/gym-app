@@ -64,6 +64,10 @@ To filter for custom gym metrics only:
 curl -s http://localhost:8080/actuator/prometheus | grep gym_
 ```
 
+Or open the following URLs in a browser:
+- `http://localhost:8080/actuator/metrics/gym.users.registered` for gym users registered
+- `http://localhost:8080/actuator/metrics/gym.trainings.total` for total amount of trainings
+
 ***Health Check:***
 
 The application exposes a health endpoint at `http://localhost:8080/actuator/health`.
