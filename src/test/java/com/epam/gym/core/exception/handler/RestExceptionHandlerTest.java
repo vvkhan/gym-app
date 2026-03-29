@@ -4,6 +4,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -26,6 +27,15 @@ class RestExceptionHandlerTest {
     @BeforeEach
     void setUp() {
         handler = new RestExceptionHandler();
+    }
+
+    @Test
+    void handleAccessDenied_returns403() {
+        ResponseEntity<Map<String, Object>> response =
+                handler.handleAccessDenied(new AccessDeniedException("Access is denied"));
+
+        assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+        assertEquals("Access denied", response.getBody().get("message"));
     }
 
     @Test

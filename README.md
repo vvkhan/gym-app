@@ -18,7 +18,7 @@ Unit tests for `model`, `dto`, `mapper` and `facade` classes were not implemente
 
 ***Preconditions:***
 - Java 17
-- PostgreSQL running on `localhost:5432`
+- PostgreSQL running on `localhost:5432` (`pgcrypto` must be enabled for DB)
 
 ***Spring Profiles:***
 
@@ -30,12 +30,14 @@ Unit tests for `model`, `dto`, `mapper` and `facade` classes were not implemente
 | `prod` | Production | `DB_URL`, `DB_USERNAME`, `DB_PASSWORD` env vars |
 
 ***Steps:***
-- Copy `src/main/resources/application-local.yaml.example` to `src/main/resources/application-local.yaml` and fill in your database credentials
+- Copy `src/main/resources/application-local.yaml.example` to `src/main/resources/application-local.yaml` and fill in your database credentials and JWT secret
+  - Generate a JWT secret with: `openssl rand -base64 32`
 - Build the JAR with `./mvnw package -DskipTests`
 - Run locally with `java -jar target/gym-app-1.0.0-SNAPSHOT.jar --spring.profiles.active=local`
 - Run with a profile with `java -jar target/gym-app-1.0.0-SNAPSHOT.jar --spring.profiles.active=dev`
+  - Non-local profiles require the `JWT_SECRET` environment variable in addition to `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`
 - The application will be available at `http://localhost:8080/api/...`
-- Import Postman collection and run it (final test run result as well as console logs are attached for the convenience)
+- Use Swagger UI at `http://localhost:8080/swagger-ui.html` to test the API
 - To stop the application, press `Ctrl+C`
 
 

@@ -16,6 +16,10 @@ spring:
         format_sql: true
         dialect: org.hibernate.dialect.PostgreSQLDialect
 
+app:
+  jwt:
+    secret: your_base64_encoded_32_byte_secret  # generate with: openssl rand -base64 32
+
 logging:
   level:
     com.epam.gym: DEBUG

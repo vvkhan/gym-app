@@ -11,6 +11,7 @@ import org.springframework.data.jpa.domain.Specification;
 import com.epam.gym.core.util.PasswordGenerator;
 import com.epam.gym.core.util.UsernameGenerator;
 import org.junit.jupiter.api.Test;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -44,6 +45,9 @@ class TrainerServiceTest {
     @Mock
     private PasswordGenerator passwordGenerator;
 
+    @Mock
+    private PasswordEncoder passwordEncoder;
+
     @InjectMocks
     private TrainerService trainerService;
 
@@ -74,15 +78,16 @@ class TrainerServiceTest {
         when(trainingTypeRepository.findById(typeId)).thenReturn(Optional.of(type));
         when(usernameGenerator.generateUsername("John", "Doe")).thenReturn("John.Doe");
         when(passwordGenerator.generatePassword()).thenReturn("pass123");
+        when(passwordEncoder.encode("pass123")).thenReturn("$2a$encoded");
 
-        Trainer saved = trainerWithUser("John.Doe", "pass123", true);
+        Trainer saved = trainerWithUser("John.Doe", "$2a$encoded", true);
         when(trainerRepository.save(any(Trainer.class))).thenReturn(saved);
 
         Trainer result = trainerService.createTrainer("John", "Doe", typeId);
 
         assertNotNull(result);
         assertEquals("John.Doe", result.getUser().getUsername());
-        assertEquals("pass123", result.getUser().getPassword());
+        assertEquals("$2a$encoded", result.getUser().getPassword());
         assertTrue(result.getUser().getIsActive());
         verify(trainerRepository).save(any(Trainer.class));
     }

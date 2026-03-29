@@ -25,3 +25,13 @@ management:
   endpoint:
     health:
       show-details: always
+
+app:
+  jwt:
+    expiration-ms: 86400000  # 24 hours
+  cors:
+    allowed-origins: "${CORS_ALLOWED_ORIGINS:http://localhost:8080}"
+    allowed-methods: "${CORS_ALLOWED_METHODS:GET,POST,PUT,DELETE,PATCH,OPTIONS}"
+    allowed-headers: "${CORS_ALLOWED_HEADERS:*}"
+    allow-credentials: true
+    max-age: 3600

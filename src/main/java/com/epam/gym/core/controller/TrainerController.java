@@ -8,18 +8,18 @@ import com.epam.gym.core.dto.response.TrainerProfileResponse;
 import com.epam.gym.core.dto.response.TrainingResponse;
 import com.epam.gym.core.dto.response.UpdatedTrainerProfileResponse;
 import com.epam.gym.core.facade.GymFacade;
+import com.epam.gym.core.model.UserPrincipal;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -36,11 +36,9 @@ import java.util.List;
 public class TrainerController {
 
     private final GymFacade facade;
-    private final AuthenticationHelper authHelper;
 
-    public TrainerController(GymFacade facade, AuthenticationHelper authHelper) {
+    public TrainerController(GymFacade facade) {
         this.facade = facade;
-        this.authHelper = authHelper;
     }
 
     @PostMapping
@@ -54,65 +52,63 @@ public class TrainerController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    @GetMapping("/{username}")
-    @Operation(summary = "Get trainer profile")
+    @GetMapping("/me")
+    @PreAuthorize("hasAuthority('ROLE_TRAINER')")
+    @Operation(summary = "Get own trainer profile")
     @ApiResponse(responseCode = "200", description = "Profile returned successfully")
     @ApiResponse(responseCode = "401", description = "Authentication failed")
+    @ApiResponse(responseCode = "403", description = "Access denied")
     @ApiResponse(responseCode = "404", description = "Trainer not found")
     public ResponseEntity<TrainerProfileResponse> getProfile(
-            @Parameter(description = "Trainer username") @PathVariable String username,
-            HttpServletRequest request) {
-        authHelper.authenticateOwner(request, username);
-        return ResponseEntity.ok(facade.getTrainerByUsername(username));
+            @AuthenticationPrincipal UserPrincipal principal) {
+        return ResponseEntity.ok(facade.getTrainerByUsername(principal.getUsername()));
     }
 
-    @PutMapping("/{username}")
-    @Operation(summary = "Update trainer profile")
+    @PutMapping("/me")
+    @PreAuthorize("hasAuthority('ROLE_TRAINER')")
+    @Operation(summary = "Update own trainer profile")
     @ApiResponse(responseCode = "200", description = "Profile updated successfully")
     @ApiResponse(responseCode = "400", description = "Validation error")
     @ApiResponse(responseCode = "401", description = "Authentication failed")
+    @ApiResponse(responseCode = "403", description = "Access denied")
     @ApiResponse(responseCode = "404", description = "Trainer not found")
     public ResponseEntity<UpdatedTrainerProfileResponse> updateProfile(
-            @Parameter(description = "Trainer username") @PathVariable String username,
-            @Valid @RequestBody UpdateTrainerRequest body,
-            HttpServletRequest request) {
-        authHelper.authenticateOwner(request, username);
+            @AuthenticationPrincipal UserPrincipal principal,
+            @Valid @RequestBody UpdateTrainerRequest body) {
         return ResponseEntity.ok(facade.updateTrainerProfile(
-                username, body.getFirstName(), body.getLastName(), body.getIsActive()));
+                principal.getUsername(), body.getFirstName(), body.getLastName(), body.getIsActive()));
     }
 
-    @PatchMapping("/{username}/activate")
-    @Operation(summary = "Activate or deactivate trainer")
+    @PatchMapping("/me/activate")
+    @PreAuthorize("hasAuthority('ROLE_TRAINER')")
+    @Operation(summary = "Activate or deactivate own trainer account")
     @ApiResponse(responseCode = "200", description = "Status changed successfully")
     @ApiResponse(responseCode = "401", description = "Authentication failed")
-    @ApiResponse(responseCode = "404", description = "Trainer not found")
+    @ApiResponse(responseCode = "403", description = "Access denied")
     @ApiResponse(responseCode = "409", description = "Trainer already in requested state")
     public ResponseEntity<Void> activate(
-            @Parameter(description = "Trainer username") @PathVariable String username,
-            @Valid @RequestBody ActivateDeactivateRequest body,
-            HttpServletRequest request) {
-        authHelper.authenticateOwner(request, username);
+            @AuthenticationPrincipal UserPrincipal principal,
+            @Valid @RequestBody ActivateDeactivateRequest body) {
         if (body.getIsActive()) {
-            facade.activateTrainer(username);
+            facade.activateTrainer(principal.getUsername());
         } else {
-            facade.deactivateTrainer(username);
+            facade.deactivateTrainer(principal.getUsername());
         }
         return ResponseEntity.ok().build();
     }
 
-    @GetMapping("/{username}/trainings")
-    @Operation(summary = "Get trainer's training list")
+    @GetMapping("/me/trainings")
+    @PreAuthorize("hasAuthority('ROLE_TRAINER')")
+    @Operation(summary = "Get own training list")
     @ApiResponse(responseCode = "200", description = "Trainings returned successfully")
     @ApiResponse(responseCode = "401", description = "Authentication failed")
+    @ApiResponse(responseCode = "403", description = "Access denied")
     public ResponseEntity<List<TrainingResponse>> getTrainings(
-            @Parameter(description = "Trainer username") @PathVariable String username,
+            @AuthenticationPrincipal UserPrincipal principal,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate periodFrom,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate periodTo,
-            @RequestParam(required = false) String traineeUsername,
-            HttpServletRequest request) {
-        authHelper.authenticateOwner(request, username);
+            @RequestParam(required = false) String traineeUsername) {
         return ResponseEntity.ok(facade.getTrainerTrainings(
-                username, periodFrom, periodTo, traineeUsername));
+                principal.getUsername(), periodFrom, periodTo, traineeUsername));
     }
-
 }

@@ -2,12 +2,14 @@ package com.epam.gym.core.controller;
 
 import com.epam.gym.core.dto.request.AddTrainingRequest;
 import com.epam.gym.core.facade.GymFacade;
+import com.epam.gym.core.model.UserPrincipal;
 import io.swagger.v3.oas.annotations.Operation;
+import org.springframework.security.access.prepost.PreAuthorize;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -19,29 +21,25 @@ import org.springframework.web.bind.annotation.RestController;
 public class TrainingController {
 
     private final GymFacade facade;
-    private final AuthenticationHelper authHelper;
 
-    public TrainingController(GymFacade facade, AuthenticationHelper authHelper) {
+    public TrainingController(GymFacade facade) {
         this.facade = facade;
-        this.authHelper = authHelper;
     }
 
     @PostMapping
+    @PreAuthorize("hasAuthority('ROLE_TRAINEE')")
     @Operation(summary = "Add training session")
-    // REST convention is 201 Created (https://restfulapi.net/http-status-201-created/)
-    // Set 200 OK as per requirements
     @ApiResponse(responseCode = "200", description = "Training added successfully")
     @ApiResponse(responseCode = "400", description = "Validation error")
     @ApiResponse(responseCode = "401", description = "Authentication failed")
+    @ApiResponse(responseCode = "403", description = "Access denied")
     @ApiResponse(responseCode = "404", description = "Trainee or trainer not found")
     public ResponseEntity<Void> addTraining(
-            @Valid @RequestBody AddTrainingRequest body,
-            HttpServletRequest request) {
-        authHelper.authenticateTrainee(request, body.getTraineeUsername());
+            @AuthenticationPrincipal UserPrincipal principal,
+            @Valid @RequestBody AddTrainingRequest body) {
         facade.createTraining(
-                body.getTraineeUsername(), body.getTrainerUsername(),
+                principal.getUsername(), body.getTrainerUsername(),
                 body.getTrainingName(), body.getTrainingDate(), body.getDuration());
         return ResponseEntity.ok().build();
     }
-
 }

@@ -1,11 +1,15 @@
 package com.epam.gym.core.controller;
 
 import com.epam.gym.core.dto.request.ChangePasswordRequest;
+import com.epam.gym.core.dto.request.LoginRequest;
 import com.epam.gym.core.exception.handler.RestExceptionHandler;
-import com.epam.gym.core.facade.GymFacade;
+import com.epam.gym.core.model.User;
+import com.epam.gym.core.model.UserPrincipal;
+import com.epam.gym.core.service.JwtService;
+import com.epam.gym.core.service.LoginAttemptService;
+import com.epam.gym.core.service.UserService;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -14,19 +18,28 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.MediaType;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
-import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.LockedException;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.web.method.annotation.AuthenticationPrincipalArgumentResolver;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
 
-import java.util.Base64;
+import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -35,10 +48,16 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class AuthControllerTest {
 
     @Mock
-    private GymFacade facade;
+    private AuthenticationManager authenticationManager;
 
     @Mock
-    private AuthenticationHelper authHelper;
+    private JwtService jwtService;
+
+    @Mock
+    private LoginAttemptService loginAttemptService;
+
+    @Mock
+    private UserService userService;
 
     @InjectMocks
     private AuthController controller;
@@ -48,117 +67,174 @@ class AuthControllerTest {
 
     @BeforeEach
     void setUp() {
-        objectMapper = new ObjectMapper()
-                .registerModule(new JavaTimeModule())
-                .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+        objectMapper = new ObjectMapper();
         LocalValidatorFactoryBean validator = new LocalValidatorFactoryBean();
         validator.afterPropertiesSet();
         mockMvc = MockMvcBuilders.standaloneSetup(controller)
+                .setCustomArgumentResolvers(new AuthenticationPrincipalArgumentResolver())
                 .setControllerAdvice(new RestExceptionHandler())
                 .setMessageConverters(new MappingJackson2HttpMessageConverter(objectMapper))
                 .setValidator(validator)
                 .build();
     }
 
-    private static String basicAuth(String username, String password) {
-        return "Basic " + Base64.getEncoder().encodeToString((username + ":" + password).getBytes());
+    @AfterEach
+    void clearSecurityContext() {
+        SecurityContextHolder.clearContext();
     }
 
-    @Test
-    void login_validTraineeCredentialsReturns200() throws Exception {
-        mockMvc.perform(get("/api/auth/login")
-                        .header("Authorization", basicAuth("alice", "pass")))
-                .andExpect(status().isOk());
-    }
+    // Login
 
     @Test
-    void login_validTrainerCredentialsReturns200() throws Exception {
-        mockMvc.perform(get("/api/auth/login")
-                        .header("Authorization", basicAuth("john", "pass")))
-                .andExpect(status().isOk());
-    }
+    void login_ValidCredentialsReturnsTokenWith200() throws Exception {
+        UserPrincipal principal = principalForUser("alice");
+        Authentication auth = mock(Authentication.class);
+        when(auth.getPrincipal()).thenReturn(principal);
+        when(authenticationManager.authenticate(any())).thenReturn(auth);
+        when(jwtService.generateToken(principal)).thenReturn("jwt-token");
 
-    @Test
-    void login_invalidCredentialsReturns401() throws Exception {
-        doThrow(new SecurityException("Invalid username or password"))
-                .when(authHelper).authenticateAny(any(HttpServletRequest.class));
+        LoginRequest request = loginRequest("alice", "pass");
 
-        mockMvc.perform(get("/api/auth/login")
-                        .header("Authorization", basicAuth("nobody", "wrong")))
-                .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.message").value("Authentication failed"));
-    }
-
-    @Test
-    void login_missingAuthHeaderReturns401() throws Exception {
-        doThrow(new SecurityException("Missing authorization header"))
-                .when(authHelper).authenticateAny(any(HttpServletRequest.class));
-
-        mockMvc.perform(get("/api/auth/login"))
-                .andExpect(status().isUnauthorized());
-    }
-
-    @Test
-    void changePassword_validTraineeRequestReturns200() throws Exception {
-        when(facade.authenticateUser("alice", "oldPass")).thenReturn(true);
-
-        ChangePasswordRequest request = new ChangePasswordRequest();
-        request.setUsername("alice");
-        request.setOldPassword("oldPass");
-        request.setNewPassword("newPass123");
-
-        mockMvc.perform(put("/api/auth/password")
+        mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isOk());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.accessToken").value("jwt-token"));
 
-        verify(facade).changePassword("alice", "newPass123");
+        verify(loginAttemptService).recordSuccess("alice");
     }
 
     @Test
-    void changePassword_validTrainerRequestReturns200() throws Exception {
-        when(facade.authenticateUser("john", "oldPass")).thenReturn(true);
+    void login_BadCredentialsReturns401AndRecordsFailure() throws Exception {
+        when(authenticationManager.authenticate(any())).thenThrow(new BadCredentialsException("bad creds"));
 
-        ChangePasswordRequest request = new ChangePasswordRequest();
-        request.setUsername("john");
-        request.setOldPassword("oldPass");
-        request.setNewPassword("newPass123");
+        LoginRequest request = loginRequest("alice", "wrong");
 
-        mockMvc.perform(put("/api/auth/password")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isOk());
-
-        verify(facade).changePassword("john", "newPass123");
-    }
-
-    @Test
-    void changePassword_wrongOldPasswordReturns401() throws Exception {
-        when(facade.authenticateUser("alice", "wrongPass")).thenReturn(false);
-
-        ChangePasswordRequest request = new ChangePasswordRequest();
-        request.setUsername("alice");
-        request.setOldPassword("wrongPass");
-        request.setNewPassword("newPass123");
-
-        mockMvc.perform(put("/api/auth/password")
+        mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isUnauthorized());
 
-        verify(facade, never()).changePassword("alice", "newPass123");
+        verify(loginAttemptService).recordFailure("alice");
     }
 
     @Test
-    void changePassword_blankUsernameReturns400() throws Exception {
-        ChangePasswordRequest request = new ChangePasswordRequest();
-        request.setUsername("");
-        request.setOldPassword("oldPass");
-        request.setNewPassword("newPass123");
+    void login_LockedAccountReturns401WithoutRecordingFailure() throws Exception {
+        when(authenticationManager.authenticate(any())).thenThrow(new LockedException("locked"));
+
+        LoginRequest request = loginRequest("alice", "pass");
+
+        mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isUnauthorized());
+
+        verify(loginAttemptService, never()).recordFailure(any());
+    }
+
+    @Test
+    void login_BlankUsernameReturns400() throws Exception {
+        LoginRequest request = loginRequest("", "pass");
+
+        mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void login_BlankPasswordReturns400() throws Exception {
+        LoginRequest request = loginRequest("alice", "");
+
+        mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
+    }
+
+    // Logout
+
+    @Test
+    void logout_AuthenticatedUserCallsRecordLogout() throws Exception {
+        UserPrincipal principal = principalForUser("alice");
+        setSecurityContext(principal);
+
+        mockMvc.perform(post("/api/auth/logout"))
+                .andExpect(status().isOk());
+
+        verify(userService).recordLogout("alice");
+    }
+
+    // Change password
+
+    @Test
+    void changePassword_ValidRequestReturns200() throws Exception {
+        UserPrincipal principal = principalForUser("alice");
+        setSecurityContext(principal);
+
+        ChangePasswordRequest request = changePasswordRequest("oldPass", "newPass");
+
+        mockMvc.perform(put("/api/auth/password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk());
+
+        verify(userService).changePassword("alice", "oldPass", "newPass");
+    }
+
+    @Test
+    void changePassword_WrongOldPasswordReturns401() throws Exception {
+        UserPrincipal principal = principalForUser("alice");
+        setSecurityContext(principal);
+        doThrow(new SecurityException("Invalid current password"))
+                .when(userService).changePassword(any(), any(), any());
+
+        ChangePasswordRequest request = changePasswordRequest("wrong", "newPass");
+
+        mockMvc.perform(put("/api/auth/password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void changePassword_BlankOldPasswordReturns400() throws Exception {
+        UserPrincipal principal = principalForUser("alice");
+        setSecurityContext(principal);
+
+        ChangePasswordRequest request = changePasswordRequest("", "newPass");
 
         mockMvc.perform(put("/api/auth/password")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest());
+    }
+
+    // Helpers
+
+    private UserPrincipal principalForUser(String username) {
+        User user = User.builder().username(username).password("pass").isActive(true).build();
+        return new UserPrincipal(user, List.of(new SimpleGrantedAuthority("ROLE_TRAINEE")));
+    }
+
+    private void setSecurityContext(UserPrincipal principal) {
+        SecurityContext context = SecurityContextHolder.createEmptyContext();
+        context.setAuthentication(new UsernamePasswordAuthenticationToken(
+                principal, null, principal.getAuthorities()));
+        SecurityContextHolder.setContext(context);
+    }
+
+    private LoginRequest loginRequest(String username, String password) {
+        LoginRequest req = new LoginRequest();
+        req.setUsername(username);
+        req.setPassword(password);
+        return req;
+    }
+
+    private ChangePasswordRequest changePasswordRequest(String oldPassword, String newPassword) {
+        ChangePasswordRequest req = new ChangePasswordRequest();
+        req.setOldPassword(oldPassword);
+        req.setNewPassword(newPassword);
+        return req;
     }
 }
