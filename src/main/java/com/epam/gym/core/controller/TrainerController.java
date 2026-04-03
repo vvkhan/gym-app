@@ -16,7 +16,6 @@ import jakarta.validation.Valid;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -52,25 +51,21 @@ public class TrainerController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    @GetMapping("/me")
-    @PreAuthorize("hasAuthority('ROLE_TRAINER')")
+    @GetMapping("/{username}")
     @Operation(summary = "Get own trainer profile")
     @ApiResponse(responseCode = "200", description = "Profile returned successfully")
     @ApiResponse(responseCode = "401", description = "Authentication failed")
-    @ApiResponse(responseCode = "403", description = "Access denied")
     @ApiResponse(responseCode = "404", description = "Trainer not found")
     public ResponseEntity<TrainerProfileResponse> getProfile(
             @AuthenticationPrincipal UserPrincipal principal) {
         return ResponseEntity.ok(facade.getTrainerByUsername(principal.getUsername()));
     }
 
-    @PutMapping("/me")
-    @PreAuthorize("hasAuthority('ROLE_TRAINER')")
+    @PutMapping("/{username}")
     @Operation(summary = "Update own trainer profile")
     @ApiResponse(responseCode = "200", description = "Profile updated successfully")
     @ApiResponse(responseCode = "400", description = "Validation error")
     @ApiResponse(responseCode = "401", description = "Authentication failed")
-    @ApiResponse(responseCode = "403", description = "Access denied")
     @ApiResponse(responseCode = "404", description = "Trainer not found")
     public ResponseEntity<UpdatedTrainerProfileResponse> updateProfile(
             @AuthenticationPrincipal UserPrincipal principal,
@@ -79,12 +74,10 @@ public class TrainerController {
                 principal.getUsername(), body.getFirstName(), body.getLastName(), body.getIsActive()));
     }
 
-    @PatchMapping("/me/activate")
-    @PreAuthorize("hasAuthority('ROLE_TRAINER')")
+    @PatchMapping("/{username}/activate")
     @Operation(summary = "Activate or deactivate own trainer account")
     @ApiResponse(responseCode = "200", description = "Status changed successfully")
     @ApiResponse(responseCode = "401", description = "Authentication failed")
-    @ApiResponse(responseCode = "403", description = "Access denied")
     @ApiResponse(responseCode = "409", description = "Trainer already in requested state")
     public ResponseEntity<Void> activate(
             @AuthenticationPrincipal UserPrincipal principal,
@@ -97,13 +90,11 @@ public class TrainerController {
         return ResponseEntity.ok().build();
     }
 
-    @GetMapping("/me/trainings")
-    @PreAuthorize("hasAuthority('ROLE_TRAINER')")
+    @GetMapping("/{username}/trainings")
     @Operation(summary = "Get own training list")
     @ApiResponse(responseCode = "200", description = "Trainings returned successfully")
     @ApiResponse(responseCode = "401", description = "Authentication failed")
-    @ApiResponse(responseCode = "403", description = "Access denied")
-    public ResponseEntity<List<TrainingResponse>> getTrainings(
+public ResponseEntity<List<TrainingResponse>> getTrainings(
             @AuthenticationPrincipal UserPrincipal principal,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate periodFrom,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate periodTo,

@@ -73,7 +73,7 @@ class TrainerControllerTest {
                 .setMessageConverters(new MappingJackson2HttpMessageConverter(objectMapper))
                 .setValidator(validator)
                 .build();
-        setSecurityContext("john");
+        setSecurityContext("John.Smith");
     }
 
     @AfterEach
@@ -136,29 +136,29 @@ class TrainerControllerTest {
 
     @Test
     void getProfile_UsesAuthenticatedUsername() throws Exception {
-        when(facade.getTrainerByUsername("john")).thenReturn(new TrainerProfileResponse());
+        when(facade.getTrainerByUsername("John.Smith")).thenReturn(new TrainerProfileResponse());
 
-        mockMvc.perform(get("/api/trainers/me"))
+        mockMvc.perform(get("/api/trainers/John.Smith"))
                 .andExpect(status().isOk());
 
-        verify(facade).getTrainerByUsername("john");
+        verify(facade).getTrainerByUsername("John.Smith");
     }
 
     @Test
     void getProfile_TrainerNotFoundReturns404() throws Exception {
-        when(facade.getTrainerByUsername("john"))
-                .thenThrow(new NoSuchElementException("Trainer not found: john"));
+        when(facade.getTrainerByUsername("John.Smith"))
+                .thenThrow(new NoSuchElementException("Trainer not found: John.Smith"));
 
-        mockMvc.perform(get("/api/trainers/me"))
+        mockMvc.perform(get("/api/trainers/John.Smith"))
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.message").value("Trainer not found: john"));
+                .andExpect(jsonPath("$.message").value("Trainer not found: John.Smith"));
     }
 
     // Update profile
 
     @Test
     void updateProfile_UsesAuthenticatedUsername() throws Exception {
-        when(facade.updateTrainerProfile(eq("john"), any(), any(), any()))
+        when(facade.updateTrainerProfile(eq("John.Smith"), any(), any(), any()))
                 .thenReturn(new UpdatedTrainerProfileResponse());
 
         UpdateTrainerRequest request = new UpdateTrainerRequest();
@@ -166,12 +166,12 @@ class TrainerControllerTest {
         request.setLastName("Smith");
         request.setIsActive(true);
 
-        mockMvc.perform(put("/api/trainers/me")
+        mockMvc.perform(put("/api/trainers/John.Smith")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk());
 
-        verify(facade).updateTrainerProfile(eq("john"), any(), any(), any());
+        verify(facade).updateTrainerProfile(eq("John.Smith"), any(), any(), any());
     }
 
     @Test
@@ -180,7 +180,7 @@ class TrainerControllerTest {
         request.setLastName("Smith");
         request.setIsActive(true);
 
-        mockMvc.perform(put("/api/trainers/me")
+        mockMvc.perform(put("/api/trainers/John.Smith")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest());
@@ -193,12 +193,12 @@ class TrainerControllerTest {
         ActivateDeactivateRequest request = new ActivateDeactivateRequest();
         request.setIsActive(true);
 
-        mockMvc.perform(patch("/api/trainers/me/activate")
+        mockMvc.perform(patch("/api/trainers/John.Smith/activate")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk());
 
-        verify(facade).activateTrainer("john");
+        verify(facade).activateTrainer("John.Smith");
     }
 
     @Test
@@ -206,23 +206,23 @@ class TrainerControllerTest {
         ActivateDeactivateRequest request = new ActivateDeactivateRequest();
         request.setIsActive(false);
 
-        mockMvc.perform(patch("/api/trainers/me/activate")
+        mockMvc.perform(patch("/api/trainers/John.Smith/activate")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk());
 
-        verify(facade).deactivateTrainer("john");
+        verify(facade).deactivateTrainer("John.Smith");
     }
 
     @Test
     void activate_AlreadyInactiveReturns409() throws Exception {
-        doThrow(new IllegalStateException("Trainer is already inactive: john"))
-                .when(facade).deactivateTrainer("john");
+        doThrow(new IllegalStateException("Trainer is already inactive: John.Smith"))
+                .when(facade).deactivateTrainer("John.Smith");
 
         ActivateDeactivateRequest request = new ActivateDeactivateRequest();
         request.setIsActive(false);
 
-        mockMvc.perform(patch("/api/trainers/me/activate")
+        mockMvc.perform(patch("/api/trainers/John.Smith/activate")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isConflict());
@@ -232,21 +232,21 @@ class TrainerControllerTest {
 
     @Test
     void getTrainings_UsesAuthenticatedUsername() throws Exception {
-        when(facade.getTrainerTrainings("john", null, null, null))
+        when(facade.getTrainerTrainings("John.Smith", null, null, null))
                 .thenReturn(List.of(new TrainingResponse()));
 
-        mockMvc.perform(get("/api/trainers/me/trainings"))
+        mockMvc.perform(get("/api/trainers/John.Smith/trainings"))
                 .andExpect(status().isOk());
 
-        verify(facade).getTrainerTrainings("john", null, null, null);
+        verify(facade).getTrainerTrainings("John.Smith", null, null, null);
     }
 
     @Test
     void getTrainings_WithTraineeNameReturns200() throws Exception {
-        when(facade.getTrainerTrainings(eq("john"), any(), any(), eq("Alice")))
+        when(facade.getTrainerTrainings(eq("John.Smith"), any(), any(), eq("Alice")))
                 .thenReturn(List.of());
 
-        mockMvc.perform(get("/api/trainers/me/trainings")
+        mockMvc.perform(get("/api/trainers/John.Smith/trainings")
                         .param("traineeUsername", "Alice"))
                 .andExpect(status().isOk());
     }

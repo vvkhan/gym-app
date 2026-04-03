@@ -9,11 +9,8 @@ import lombok.ToString;
 @Getter
 @Setter
 @NoArgsConstructor
-@ToString(exclude = {"oldPassword", "newPassword"})
+@ToString(exclude = "newPassword")
 public class ChangePasswordRequest {
-
-    @NotBlank
-    private String oldPassword;
 
     @NotBlank
     private String newPassword;

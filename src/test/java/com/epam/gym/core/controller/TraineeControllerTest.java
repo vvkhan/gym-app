@@ -77,7 +77,7 @@ class TraineeControllerTest {
                 .setMessageConverters(new MappingJackson2HttpMessageConverter(objectMapper))
                 .setValidator(validator)
                 .build();
-        setSecurityContext("alice");
+        setSecurityContext("Alice.Smith");
     }
 
     @AfterEach
@@ -118,29 +118,29 @@ class TraineeControllerTest {
 
     @Test
     void getProfile_UsesAuthenticatedUsername() throws Exception {
-        when(facade.getTraineeByUsername("alice")).thenReturn(new TraineeProfileResponse());
+        when(facade.getTraineeByUsername("Alice.Smith")).thenReturn(new TraineeProfileResponse());
 
-        mockMvc.perform(get("/api/trainees/me"))
+        mockMvc.perform(get("/api/trainees/Alice.Smith"))
                 .andExpect(status().isOk());
 
-        verify(facade).getTraineeByUsername("alice");
+        verify(facade).getTraineeByUsername("Alice.Smith");
     }
 
     @Test
     void getProfile_TraineeNotFoundReturns404() throws Exception {
-        when(facade.getTraineeByUsername("alice"))
-                .thenThrow(new NoSuchElementException("Trainee not found: alice"));
+        when(facade.getTraineeByUsername("Alice.Smith"))
+                .thenThrow(new NoSuchElementException("Trainee not found: Alice.Smith"));
 
-        mockMvc.perform(get("/api/trainees/me"))
+        mockMvc.perform(get("/api/trainees/Alice.Smith"))
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.message").value("Trainee not found: alice"));
+                .andExpect(jsonPath("$.message").value("Trainee not found: Alice.Smith"));
     }
 
     // Update profile
 
     @Test
     void updateProfile_UsesAuthenticatedUsername() throws Exception {
-        when(facade.updateTraineeProfile(eq("alice"), any(), any(), any(), any(), any()))
+        when(facade.updateTraineeProfile(eq("Alice.Smith"), any(), any(), any(), any(), any()))
                 .thenReturn(new UpdatedTraineeProfileResponse());
 
         UpdateTraineeRequest request = new UpdateTraineeRequest();
@@ -148,12 +148,12 @@ class TraineeControllerTest {
         request.setLastName("Smith");
         request.setIsActive(true);
 
-        mockMvc.perform(put("/api/trainees/me")
+        mockMvc.perform(put("/api/trainees/Alice.Smith")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk());
 
-        verify(facade).updateTraineeProfile(eq("alice"), any(), any(), any(), any(), any());
+        verify(facade).updateTraineeProfile(eq("Alice.Smith"), any(), any(), any(), any(), any());
     }
 
     @Test
@@ -162,7 +162,7 @@ class TraineeControllerTest {
         request.setFirstName("Alice");
         request.setLastName("Smith");
 
-        mockMvc.perform(put("/api/trainees/me")
+        mockMvc.perform(put("/api/trainees/Alice.Smith")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest());
@@ -172,10 +172,10 @@ class TraineeControllerTest {
 
     @Test
     void delete_UsesAuthenticatedUsername() throws Exception {
-        mockMvc.perform(delete("/api/trainees/me"))
+        mockMvc.perform(delete("/api/trainees/Alice.Smith"))
                 .andExpect(status().isOk());
 
-        verify(facade).deleteTrainee("alice");
+        verify(facade).deleteTrainee("Alice.Smith");
     }
 
     // Activate / Deactivate
@@ -185,12 +185,12 @@ class TraineeControllerTest {
         ActivateDeactivateRequest request = new ActivateDeactivateRequest();
         request.setIsActive(true);
 
-        mockMvc.perform(patch("/api/trainees/me/activate")
+        mockMvc.perform(patch("/api/trainees/Alice.Smith/activate")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk());
 
-        verify(facade).activateTrainee("alice");
+        verify(facade).activateTrainee("Alice.Smith");
     }
 
     @Test
@@ -198,23 +198,23 @@ class TraineeControllerTest {
         ActivateDeactivateRequest request = new ActivateDeactivateRequest();
         request.setIsActive(false);
 
-        mockMvc.perform(patch("/api/trainees/me/activate")
+        mockMvc.perform(patch("/api/trainees/Alice.Smith/activate")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk());
 
-        verify(facade).deactivateTrainee("alice");
+        verify(facade).deactivateTrainee("Alice.Smith");
     }
 
     @Test
     void activate_AlreadyActiveReturns409() throws Exception {
-        doThrow(new IllegalStateException("Trainee is already active: alice"))
-                .when(facade).activateTrainee("alice");
+        doThrow(new IllegalStateException("Trainee is already active: Alice.Smith"))
+                .when(facade).activateTrainee("Alice.Smith");
 
         ActivateDeactivateRequest request = new ActivateDeactivateRequest();
         request.setIsActive(true);
 
-        mockMvc.perform(patch("/api/trainees/me/activate")
+        mockMvc.perform(patch("/api/trainees/Alice.Smith/activate")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isConflict());
@@ -224,30 +224,30 @@ class TraineeControllerTest {
 
     @Test
     void getNotAssignedTrainers_UsesAuthenticatedUsername() throws Exception {
-        when(facade.getNotAssignedTrainers("alice")).thenReturn(List.of(new TrainerSummaryResponse()));
+        when(facade.getNotAssignedTrainers("Alice.Smith")).thenReturn(List.of(new TrainerSummaryResponse()));
 
-        mockMvc.perform(get("/api/trainees/me/not-assigned-trainers"))
+        mockMvc.perform(get("/api/trainees/Alice.Smith/not-assigned-trainers"))
                 .andExpect(status().isOk());
 
-        verify(facade).getNotAssignedTrainers("alice");
+        verify(facade).getNotAssignedTrainers("Alice.Smith");
     }
 
     // Update trainers list
 
     @Test
     void updateTrainers_UsesAuthenticatedUsername() throws Exception {
-        when(facade.updateTraineeTrainers(eq("alice"), any(Set.class)))
+        when(facade.updateTraineeTrainers(eq("Alice.Smith"), any(Set.class)))
                 .thenReturn(List.of(new TrainerSummaryResponse()));
 
         TraineeTrainersUpdateRequest request = new TraineeTrainersUpdateRequest();
         request.setTrainerUsernames(List.of("trainer1", "trainer2"));
 
-        mockMvc.perform(put("/api/trainees/me/trainers")
+        mockMvc.perform(put("/api/trainees/Alice.Smith/trainers")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk());
 
-        verify(facade).updateTraineeTrainers(eq("alice"), any(Set.class));
+        verify(facade).updateTraineeTrainers(eq("Alice.Smith"), any(Set.class));
     }
 
     @Test
@@ -255,7 +255,7 @@ class TraineeControllerTest {
         TraineeTrainersUpdateRequest request = new TraineeTrainersUpdateRequest();
         request.setTrainerUsernames(List.of());
 
-        mockMvc.perform(put("/api/trainees/me/trainers")
+        mockMvc.perform(put("/api/trainees/Alice.Smith/trainers")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest());
@@ -265,21 +265,21 @@ class TraineeControllerTest {
 
     @Test
     void getTrainings_UsesAuthenticatedUsername() throws Exception {
-        when(facade.getTraineeTrainings("alice", null, null, null, null))
+        when(facade.getTraineeTrainings("Alice.Smith", null, null, null, null))
                 .thenReturn(List.of(new TrainingResponse()));
 
-        mockMvc.perform(get("/api/trainees/me/trainings"))
+        mockMvc.perform(get("/api/trainees/Alice.Smith/trainings"))
                 .andExpect(status().isOk());
 
-        verify(facade).getTraineeTrainings("alice", null, null, null, null);
+        verify(facade).getTraineeTrainings("Alice.Smith", null, null, null, null);
     }
 
     @Test
     void getTrainings_WithFiltersReturns200() throws Exception {
-        when(facade.getTraineeTrainings(eq("alice"), any(), any(), eq("John"), eq("Yoga")))
+        when(facade.getTraineeTrainings(eq("Alice.Smith"), any(), any(), eq("John"), eq("Yoga")))
                 .thenReturn(List.of());
 
-        mockMvc.perform(get("/api/trainees/me/trainings")
+        mockMvc.perform(get("/api/trainees/Alice.Smith/trainings")
                         .param("periodFrom", "2024-01-01")
                         .param("periodTo", "2024-12-31")
                         .param("trainerUsername", "John")

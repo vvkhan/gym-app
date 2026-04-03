@@ -4,7 +4,6 @@ import com.epam.gym.core.model.User;
 import com.epam.gym.core.repository.UserRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -16,7 +15,6 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -35,25 +33,13 @@ class UserServiceTest {
     void changePassword_UpdatesPasswordSuccessfully() {
         User user = User.builder().username("alice").password("$2a$encoded").build();
         when(userRepository.findByUsername("alice")).thenReturn(Optional.of(user));
-        when(passwordEncoder.matches("oldPass", "$2a$encoded")).thenReturn(true);
         when(passwordEncoder.encode("newPass")).thenReturn("$2a$newEncoded");
 
-        userService.changePassword("alice", "oldPass", "newPass");
+        userService.changePassword("alice", "newPass");
 
         assertEquals("$2a$newEncoded", user.getPassword());
+        assertNotNull(user.getLastLogout());
         verify(userRepository).save(user);
-    }
-
-    @Test
-    void changePassword_ThrowWhenOldPasswordIsWrong() {
-        User user = User.builder().username("alice").password("$2a$encoded").build();
-        when(userRepository.findByUsername("alice")).thenReturn(Optional.of(user));
-        when(passwordEncoder.matches("wrongPass", "$2a$encoded")).thenReturn(false);
-
-        assertThrows(SecurityException.class, () ->
-                userService.changePassword("alice", "wrongPass", "newPass"));
-        verify(userRepository, never()).save(any());
-        verify(passwordEncoder, never()).encode(anyString());
     }
 
     @Test
@@ -61,7 +47,7 @@ class UserServiceTest {
         when(userRepository.findByUsername("unknown")).thenReturn(Optional.empty());
 
         assertThrows(NoSuchElementException.class, () ->
-                userService.changePassword("unknown", "old", "new"));
+                userService.changePassword("unknown", "new"));
         verify(userRepository, never()).save(any());
     }
 
