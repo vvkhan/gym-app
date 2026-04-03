@@ -34,7 +34,6 @@ import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -172,37 +171,22 @@ class AuthControllerTest {
         UserPrincipal principal = principalForUser("alice");
         setSecurityContext(principal);
 
-        ChangePasswordRequest request = changePasswordRequest("oldPass", "newPass");
+        ChangePasswordRequest request = changePasswordRequest("newPass");
 
         mockMvc.perform(put("/api/auth/password")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk());
 
-        verify(userService).changePassword("alice", "oldPass", "newPass");
+        verify(userService).changePassword("alice", "newPass");
     }
 
     @Test
-    void changePassword_WrongOldPasswordReturns401() throws Exception {
-        UserPrincipal principal = principalForUser("alice");
-        setSecurityContext(principal);
-        doThrow(new SecurityException("Invalid current password"))
-                .when(userService).changePassword(any(), any(), any());
-
-        ChangePasswordRequest request = changePasswordRequest("wrong", "newPass");
-
-        mockMvc.perform(put("/api/auth/password")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isUnauthorized());
-    }
-
-    @Test
-    void changePassword_BlankOldPasswordReturns400() throws Exception {
+    void changePassword_BlankNewPasswordReturns400() throws Exception {
         UserPrincipal principal = principalForUser("alice");
         setSecurityContext(principal);
 
-        ChangePasswordRequest request = changePasswordRequest("", "newPass");
+        ChangePasswordRequest request = changePasswordRequest("");
 
         mockMvc.perform(put("/api/auth/password")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -231,9 +215,8 @@ class AuthControllerTest {
         return req;
     }
 
-    private ChangePasswordRequest changePasswordRequest(String oldPassword, String newPassword) {
+    private ChangePasswordRequest changePasswordRequest(String newPassword) {
         ChangePasswordRequest req = new ChangePasswordRequest();
-        req.setOldPassword(oldPassword);
         req.setNewPassword(newPassword);
         return req;
     }

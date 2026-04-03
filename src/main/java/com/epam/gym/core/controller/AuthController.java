@@ -82,7 +82,7 @@ public class AuthController {
     @ApiResponse(responseCode = "401", description = "Invalid current password")
     public ResponseEntity<Void> changePassword(@Valid @RequestBody ChangePasswordRequest request,
                                                @AuthenticationPrincipal UserPrincipal principal) {
-        userService.changePassword(principal.getUsername(), request.getOldPassword(), request.getNewPassword());
+        userService.changePassword(principal.getUsername(), request.getNewPassword());
         return ResponseEntity.ok().build();
     }
 }

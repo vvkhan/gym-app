@@ -23,13 +23,11 @@ public class UserService {
     }
 
     @Transactional
-    public void changePassword(String username, String oldPassword, String newPassword) {
+    public void changePassword(String username, String newPassword) {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new NoSuchElementException("User not found: " + username));
-        if (!passwordEncoder.matches(oldPassword, user.getPassword())) {
-            throw new SecurityException("Invalid current password");
-        }
         user.setPassword(passwordEncoder.encode(newPassword));
+        user.setLastLogout(LocalDateTime.now());
         userRepository.save(user);
     }
 
