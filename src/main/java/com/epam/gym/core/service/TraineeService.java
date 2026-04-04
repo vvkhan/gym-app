@@ -13,6 +13,7 @@ import com.epam.gym.core.util.PasswordGenerator;
 import com.epam.gym.core.util.UsernameGenerator;
 import com.epam.gym.core.aspect.LogExecution;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -39,6 +40,7 @@ public class TraineeService {
 
     private UsernameGenerator usernameGenerator;
     private PasswordGenerator passwordGenerator;
+    private PasswordEncoder passwordEncoder;
 
     @Autowired
     public void setUsernameGenerator(UsernameGenerator usernameGenerator) {
@@ -48,6 +50,11 @@ public class TraineeService {
     @Autowired
     public void setPasswordGenerator(PasswordGenerator passwordGenerator) {
         this.passwordGenerator = passwordGenerator;
+    }
+
+    @Autowired
+    public void setPasswordEncoder(PasswordEncoder passwordEncoder) {
+        this.passwordEncoder = passwordEncoder;
     }
 
     public Trainee createTrainee(String firstName, String lastName, LocalDate dateOfBirth, String address) {
@@ -156,11 +163,13 @@ public class TraineeService {
 
     private Trainee buildTraineeForCreate(String firstName, String lastName,
                                           LocalDate dateOfBirth, String address) {
+        String rawPassword = passwordGenerator.generatePassword();
         User user = User.builder()
                 .firstName(firstName)
                 .lastName(lastName)
                 .username(usernameGenerator.generateUsername(firstName, lastName))
-                .password(passwordGenerator.generatePassword())
+                .password(passwordEncoder.encode(rawPassword))
+                .rawPassword(rawPassword)
                 .isActive(true)
                 .build();
         Trainee trainee = new Trainee();

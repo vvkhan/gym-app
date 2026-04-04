@@ -19,7 +19,6 @@ import com.epam.gym.core.model.Trainer;
 import com.epam.gym.core.service.TraineeService;
 import com.epam.gym.core.service.TrainerService;
 import com.epam.gym.core.service.TrainingService;
-import com.epam.gym.core.service.UserService;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
@@ -33,7 +32,6 @@ import java.util.UUID;
 @Component
 public class GymFacade {
 
-    private final UserService userService;
     private final TraineeService traineeService;
     private final TrainerService trainerService;
     private final TrainingService trainingService;
@@ -43,8 +41,7 @@ public class GymFacade {
     private final TrainingMapper trainingMapper;
     private final TrainingTypeMapper trainingTypeMapper;
 
-    public GymFacade(UserService userService,
-                     TraineeService traineeService,
+    public GymFacade(TraineeService traineeService,
                      TrainerService trainerService,
                      TrainingService trainingService,
                      TraineeMapper traineeMapper,
@@ -52,7 +49,6 @@ public class GymFacade {
                      TrainerSummaryMapper trainerSummaryMapper,
                      TrainingMapper trainingMapper,
                      TrainingTypeMapper trainingTypeMapper) {
-        this.userService = userService;
         this.traineeService = traineeService;
         this.trainerService = trainerService;
         this.trainingService = trainingService;
@@ -61,18 +57,6 @@ public class GymFacade {
         this.trainerSummaryMapper = trainerSummaryMapper;
         this.trainingMapper = trainingMapper;
         this.trainingTypeMapper = trainingTypeMapper;
-    }
-
-    // -------------------------------------------------------------------------
-    // Authentication
-    // -------------------------------------------------------------------------
-
-    public boolean authenticateUser(String username, String password) {
-        return userService.authenticate(username, password);
-    }
-
-    public boolean isTrainee(String username) {
-        return traineeService.getTraineeByUsername(username).isPresent();
     }
 
     // -------------------------------------------------------------------------
@@ -102,10 +86,6 @@ public class GymFacade {
 
     public void deleteTrainee(String username) {
         traineeService.deleteTrainee(username);
-    }
-
-    public void changePassword(String username, String newPassword) {
-        userService.changePassword(username, newPassword);
     }
 
     public void activateTrainee(String username) {

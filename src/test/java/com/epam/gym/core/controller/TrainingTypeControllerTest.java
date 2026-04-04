@@ -4,7 +4,6 @@ import com.epam.gym.core.dto.response.TrainingTypeResponse;
 import com.epam.gym.core.exception.handler.RestExceptionHandler;
 import com.epam.gym.core.facade.GymFacade;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -15,12 +14,9 @@ import org.springframework.http.converter.json.MappingJackson2HttpMessageConvert
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
-import java.util.Base64;
 import java.util.List;
 import java.util.UUID;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -31,9 +27,6 @@ class TrainingTypeControllerTest {
 
     @Mock
     private GymFacade facade;
-
-    @Mock
-    private AuthenticationHelper authHelper;
 
     @InjectMocks
     private TrainingTypeController controller;
@@ -48,12 +41,8 @@ class TrainingTypeControllerTest {
                 .build();
     }
 
-    private static String basicAuth(String username, String password) {
-        return "Basic " + Base64.getEncoder().encodeToString((username + ":" + password).getBytes());
-    }
-
     @Test
-    void getAll_validTraineeReturnsTypes() throws Exception {
+    void getAll_ReturnsAllTrainingTypes() throws Exception {
         TrainingTypeResponse yoga = new TrainingTypeResponse();
         yoga.setId(UUID.randomUUID());
         yoga.setTrainingTypeName("Yoga");
@@ -64,38 +53,17 @@ class TrainingTypeControllerTest {
 
         when(facade.getAllTrainingTypes()).thenReturn(List.of(yoga, fitness));
 
-        mockMvc.perform(get("/api/training-types")
-                        .header("Authorization", basicAuth("alice", "pass")))
+        mockMvc.perform(get("/api/training-types"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].trainingTypeName").value("Yoga"))
                 .andExpect(jsonPath("$[1].trainingTypeName").value("Fitness"));
     }
 
     @Test
-    void getAll_validTrainerReturnsTypes() throws Exception {
+    void getAll_EmptyListReturns200() throws Exception {
         when(facade.getAllTrainingTypes()).thenReturn(List.of());
 
-        mockMvc.perform(get("/api/training-types")
-                        .header("Authorization", basicAuth("john", "pass")))
-                .andExpect(status().isOk());
-    }
-
-    @Test
-    void getAll_invalidCredentialsReturns401() throws Exception {
-        doThrow(new SecurityException("Invalid username or password"))
-                .when(authHelper).authenticateAny(any(HttpServletRequest.class));
-
-        mockMvc.perform(get("/api/training-types")
-                        .header("Authorization", basicAuth("nobody", "wrong")))
-                .andExpect(status().isUnauthorized());
-    }
-
-    @Test
-    void getAll_missingAuthHeaderReturns401() throws Exception {
-        doThrow(new SecurityException("Missing authorization header"))
-                .when(authHelper).authenticateAny(any(HttpServletRequest.class));
-
         mockMvc.perform(get("/api/training-types"))
-                .andExpect(status().isUnauthorized());
+                .andExpect(status().isOk());
     }
 }

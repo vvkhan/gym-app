@@ -9,10 +9,8 @@ import com.epam.gym.core.dto.response.TrainingResponse;
 import com.epam.gym.core.dto.response.UpdatedTrainerProfileResponse;
 import com.epam.gym.core.facade.GymFacade;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
@@ -36,11 +34,9 @@ import java.util.List;
 public class TrainerController {
 
     private final GymFacade facade;
-    private final AuthenticationHelper authHelper;
 
-    public TrainerController(GymFacade facade, AuthenticationHelper authHelper) {
+    public TrainerController(GymFacade facade) {
         this.facade = facade;
-        this.authHelper = authHelper;
     }
 
     @PostMapping
@@ -55,43 +51,35 @@ public class TrainerController {
     }
 
     @GetMapping("/{username}")
-    @Operation(summary = "Get trainer profile")
+    @Operation(summary = "Get own trainer profile")
     @ApiResponse(responseCode = "200", description = "Profile returned successfully")
     @ApiResponse(responseCode = "401", description = "Authentication failed")
     @ApiResponse(responseCode = "404", description = "Trainer not found")
-    public ResponseEntity<TrainerProfileResponse> getProfile(
-            @Parameter(description = "Trainer username") @PathVariable String username,
-            HttpServletRequest request) {
-        authHelper.authenticateOwner(request, username);
+    public ResponseEntity<TrainerProfileResponse> getProfile(@PathVariable String username) {
         return ResponseEntity.ok(facade.getTrainerByUsername(username));
     }
 
     @PutMapping("/{username}")
-    @Operation(summary = "Update trainer profile")
+    @Operation(summary = "Update own trainer profile")
     @ApiResponse(responseCode = "200", description = "Profile updated successfully")
     @ApiResponse(responseCode = "400", description = "Validation error")
     @ApiResponse(responseCode = "401", description = "Authentication failed")
     @ApiResponse(responseCode = "404", description = "Trainer not found")
     public ResponseEntity<UpdatedTrainerProfileResponse> updateProfile(
-            @Parameter(description = "Trainer username") @PathVariable String username,
-            @Valid @RequestBody UpdateTrainerRequest body,
-            HttpServletRequest request) {
-        authHelper.authenticateOwner(request, username);
+            @PathVariable String username,
+            @Valid @RequestBody UpdateTrainerRequest body) {
         return ResponseEntity.ok(facade.updateTrainerProfile(
                 username, body.getFirstName(), body.getLastName(), body.getIsActive()));
     }
 
     @PatchMapping("/{username}/activate")
-    @Operation(summary = "Activate or deactivate trainer")
+    @Operation(summary = "Activate or deactivate own trainer account")
     @ApiResponse(responseCode = "200", description = "Status changed successfully")
     @ApiResponse(responseCode = "401", description = "Authentication failed")
-    @ApiResponse(responseCode = "404", description = "Trainer not found")
     @ApiResponse(responseCode = "409", description = "Trainer already in requested state")
     public ResponseEntity<Void> activate(
-            @Parameter(description = "Trainer username") @PathVariable String username,
-            @Valid @RequestBody ActivateDeactivateRequest body,
-            HttpServletRequest request) {
-        authHelper.authenticateOwner(request, username);
+            @PathVariable String username,
+            @Valid @RequestBody ActivateDeactivateRequest body) {
         if (body.getIsActive()) {
             facade.activateTrainer(username);
         } else {
@@ -101,18 +89,15 @@ public class TrainerController {
     }
 
     @GetMapping("/{username}/trainings")
-    @Operation(summary = "Get trainer's training list")
+    @Operation(summary = "Get own training list")
     @ApiResponse(responseCode = "200", description = "Trainings returned successfully")
     @ApiResponse(responseCode = "401", description = "Authentication failed")
     public ResponseEntity<List<TrainingResponse>> getTrainings(
-            @Parameter(description = "Trainer username") @PathVariable String username,
+            @PathVariable String username,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate periodFrom,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate periodTo,
-            @RequestParam(required = false) String traineeUsername,
-            HttpServletRequest request) {
-        authHelper.authenticateOwner(request, username);
+            @RequestParam(required = false) String traineeUsername) {
         return ResponseEntity.ok(facade.getTrainerTrainings(
                 username, periodFrom, periodTo, traineeUsername));
     }
-
 }

@@ -17,3 +17,7 @@ spring:
 logging:
   level:
     com.epam.gym: DEBUG
+
+app:
+  jwt:
+    secret: "${JWT_SECRET}"

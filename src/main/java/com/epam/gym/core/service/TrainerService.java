@@ -12,6 +12,7 @@ import com.epam.gym.core.util.PasswordGenerator;
 import com.epam.gym.core.util.UsernameGenerator;
 import com.epam.gym.core.aspect.LogExecution;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -36,6 +37,7 @@ public class TrainerService {
 
     private UsernameGenerator usernameGenerator;
     private PasswordGenerator passwordGenerator;
+    private PasswordEncoder passwordEncoder;
 
     @Autowired
     public void setUsernameGenerator(UsernameGenerator usernameGenerator) {
@@ -45,6 +47,11 @@ public class TrainerService {
     @Autowired
     public void setPasswordGenerator(PasswordGenerator passwordGenerator) {
         this.passwordGenerator = passwordGenerator;
+    }
+
+    @Autowired
+    public void setPasswordEncoder(PasswordEncoder passwordEncoder) {
+        this.passwordEncoder = passwordEncoder;
     }
 
     public Trainer createTrainer(String firstName, String lastName, UUID trainingTypeId) {
@@ -118,11 +125,13 @@ public class TrainerService {
     // Helper
 
     private Trainer buildTrainerForCreate(String firstName, String lastName, TrainingType trainingType) {
+        String rawPassword = passwordGenerator.generatePassword();
         User user = User.builder()
                 .firstName(firstName)
                 .lastName(lastName)
                 .username(usernameGenerator.generateUsername(firstName, lastName))
-                .password(passwordGenerator.generatePassword())
+                .password(passwordEncoder.encode(rawPassword))
+                .rawPassword(rawPassword)
                 .isActive(true)
                 .build();
         Trainer trainer = new Trainer();

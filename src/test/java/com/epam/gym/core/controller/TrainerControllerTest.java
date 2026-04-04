@@ -9,7 +9,6 @@ import com.epam.gym.core.dto.response.TrainingResponse;
 import com.epam.gym.core.dto.response.UpdatedTrainerProfileResponse;
 import com.epam.gym.core.exception.handler.RestExceptionHandler;
 import com.epam.gym.core.facade.GymFacade;
-import com.epam.gym.core.controller.AuthenticationHelper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
@@ -25,7 +24,6 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
 
-import java.util.Base64;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.UUID;
@@ -48,9 +46,6 @@ class TrainerControllerTest {
     @Mock
     private GymFacade facade;
 
-    @Mock
-    private AuthenticationHelper authHelper;
-
     @InjectMocks
     private TrainerController controller;
 
@@ -71,14 +66,10 @@ class TrainerControllerTest {
                 .build();
     }
 
-    private static String basicAuth(String username, String password) {
-        return "Basic " + Base64.getEncoder().encodeToString((username + ":" + password).getBytes());
-    }
-
-    // Registration
+    // Registration (public — no principal needed)
 
     @Test
-    void register_validRequestReturns201() throws Exception {
+    void register_ValidRequestReturns201() throws Exception {
         UUID specializationId = UUID.randomUUID();
 
         TrainerRegistrationRequest request = new TrainerRegistrationRequest();
@@ -97,7 +88,7 @@ class TrainerControllerTest {
     }
 
     @Test
-    void register_missingSpecializationReturns400() throws Exception {
+    void register_MissingSpecializationReturns400() throws Exception {
         TrainerRegistrationRequest request = new TrainerRegistrationRequest();
         request.setFirstName("John");
         request.setLastName("Smith");
@@ -109,7 +100,7 @@ class TrainerControllerTest {
     }
 
     @Test
-    void register_specializationNotFoundReturns404() throws Exception {
+    void register_SpecializationNotFoundReturns404() throws Exception {
         UUID unknownId = UUID.randomUUID();
 
         TrainerRegistrationRequest request = new TrainerRegistrationRequest();
@@ -129,49 +120,30 @@ class TrainerControllerTest {
     // Get profile
 
     @Test
-    void getProfile_validAuthReturns200() throws Exception {
-        when(facade.getTrainerByUsername("john")).thenReturn(new TrainerProfileResponse());
+    void getProfile_ReturnsProfile() throws Exception {
+        when(facade.getTrainerByUsername("John.Smith")).thenReturn(new TrainerProfileResponse());
 
-        mockMvc.perform(get("/api/trainers/john")
-                        .header("Authorization", basicAuth("john", "pass")))
+        mockMvc.perform(get("/api/trainers/John.Smith"))
                 .andExpect(status().isOk());
+
+        verify(facade).getTrainerByUsername("John.Smith");
     }
 
     @Test
-    void getProfile_missingAuthHeaderReturns401() throws Exception {
-        doThrow(new SecurityException("Missing Authorization header"))
-                .when(authHelper).authenticateOwner(any(), any());
+    void getProfile_TrainerNotFoundReturns404() throws Exception {
+        when(facade.getTrainerByUsername("John.Smith"))
+                .thenThrow(new NoSuchElementException("Trainer not found: John.Smith"));
 
-        mockMvc.perform(get("/api/trainers/john"))
-                .andExpect(status().isUnauthorized());
-    }
-
-    @Test
-    void getProfile_differentUserReturns401() throws Exception {
-        doThrow(new SecurityException("Access denied"))
-                .when(authHelper).authenticateOwner(any(), any());
-
-        mockMvc.perform(get("/api/trainers/john")
-                        .header("Authorization", basicAuth("alice", "pass")))
-                .andExpect(status().isUnauthorized());
-    }
-
-    @Test
-    void getProfile_trainerNotFoundReturns404() throws Exception {
-        when(facade.getTrainerByUsername("ghost"))
-                .thenThrow(new NoSuchElementException("Trainer not found: ghost"));
-
-        mockMvc.perform(get("/api/trainers/ghost")
-                        .header("Authorization", basicAuth("ghost", "pass")))
+        mockMvc.perform(get("/api/trainers/John.Smith"))
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.message").value("Trainer not found: ghost"));
+                .andExpect(jsonPath("$.message").value("Trainer not found: John.Smith"));
     }
 
     // Update profile
 
     @Test
-    void updateProfile_validRequestReturns200() throws Exception {
-        when(facade.updateTrainerProfile(eq("john"), any(), any(), any()))
+    void updateProfile_ValidRequestReturns200() throws Exception {
+        when(facade.updateTrainerProfile(eq("John.Smith"), any(), any(), any()))
                 .thenReturn(new UpdatedTrainerProfileResponse());
 
         UpdateTrainerRequest request = new UpdateTrainerRequest();
@@ -179,21 +151,21 @@ class TrainerControllerTest {
         request.setLastName("Smith");
         request.setIsActive(true);
 
-        mockMvc.perform(put("/api/trainers/john")
-                        .header("Authorization", basicAuth("john", "pass"))
+        mockMvc.perform(put("/api/trainers/John.Smith")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk());
+
+        verify(facade).updateTrainerProfile(eq("John.Smith"), any(), any(), any());
     }
 
     @Test
-    void updateProfile_missingFirstNameReturns400() throws Exception {
+    void updateProfile_MissingFirstNameReturns400() throws Exception {
         UpdateTrainerRequest request = new UpdateTrainerRequest();
         request.setLastName("Smith");
         request.setIsActive(true);
 
-        mockMvc.perform(put("/api/trainers/john")
-                        .header("Authorization", basicAuth("john", "pass"))
+        mockMvc.perform(put("/api/trainers/John.Smith")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest());
@@ -202,43 +174,40 @@ class TrainerControllerTest {
     // Activate / Deactivate
 
     @Test
-    void activate_isActiveTrueCallsActivate() throws Exception {
+    void activate_IsActiveTrueCallsActivate() throws Exception {
         ActivateDeactivateRequest request = new ActivateDeactivateRequest();
         request.setIsActive(true);
 
-        mockMvc.perform(patch("/api/trainers/john/activate")
-                        .header("Authorization", basicAuth("john", "pass"))
+        mockMvc.perform(patch("/api/trainers/John.Smith/activate")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk());
 
-        verify(facade).activateTrainer("john");
+        verify(facade).activateTrainer("John.Smith");
     }
 
     @Test
-    void activate_isActiveFalseCallsDeactivate() throws Exception {
+    void activate_IsActiveFalseCallsDeactivate() throws Exception {
         ActivateDeactivateRequest request = new ActivateDeactivateRequest();
         request.setIsActive(false);
 
-        mockMvc.perform(patch("/api/trainers/john/activate")
-                        .header("Authorization", basicAuth("john", "pass"))
+        mockMvc.perform(patch("/api/trainers/John.Smith/activate")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk());
 
-        verify(facade).deactivateTrainer("john");
+        verify(facade).deactivateTrainer("John.Smith");
     }
 
     @Test
-    void activate_alreadyInactiveReturns409() throws Exception {
-        doThrow(new IllegalStateException("Trainer is already inactive: john"))
-                .when(facade).deactivateTrainer("john");
+    void activate_AlreadyInactiveReturns409() throws Exception {
+        doThrow(new IllegalStateException("Trainer is already inactive: John.Smith"))
+                .when(facade).deactivateTrainer("John.Smith");
 
         ActivateDeactivateRequest request = new ActivateDeactivateRequest();
         request.setIsActive(false);
 
-        mockMvc.perform(patch("/api/trainers/john/activate")
-                        .header("Authorization", basicAuth("john", "pass"))
+        mockMvc.perform(patch("/api/trainers/John.Smith/activate")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isConflict());
@@ -247,23 +216,23 @@ class TrainerControllerTest {
     // Trainings list
 
     @Test
-    void getTrainings_noFiltersReturns200() throws Exception {
-        when(facade.getTrainerTrainings("john", null, null, null))
+    void getTrainings_ReturnsTrainings() throws Exception {
+        when(facade.getTrainerTrainings("John.Smith", null, null, null))
                 .thenReturn(List.of(new TrainingResponse()));
 
-        mockMvc.perform(get("/api/trainers/john/trainings")
-                        .header("Authorization", basicAuth("john", "pass")))
+        mockMvc.perform(get("/api/trainers/John.Smith/trainings"))
                 .andExpect(status().isOk());
+
+        verify(facade).getTrainerTrainings("John.Smith", null, null, null);
     }
 
     @Test
-    void getTrainings_withTraineeNameReturns200() throws Exception {
-        when(facade.getTrainerTrainings(eq("john"), any(), any(), eq("Alice")))
+    void getTrainings_WithTraineeNameReturns200() throws Exception {
+        when(facade.getTrainerTrainings(eq("John.Smith"), any(), any(), eq("Alice.Smith")))
                 .thenReturn(List.of());
 
-        mockMvc.perform(get("/api/trainers/john/trainings")
-                        .header("Authorization", basicAuth("john", "pass"))
-                        .param("traineeUsername", "Alice"))
+        mockMvc.perform(get("/api/trainers/John.Smith/trainings")
+                        .param("traineeUsername", "Alice.Smith"))
                 .andExpect(status().isOk());
     }
 }

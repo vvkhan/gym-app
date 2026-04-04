@@ -11,6 +11,7 @@ import org.springframework.data.jpa.domain.Specification;
 import com.epam.gym.core.util.PasswordGenerator;
 import com.epam.gym.core.util.UsernameGenerator;
 import org.junit.jupiter.api.Test;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -45,6 +46,9 @@ class TraineeServiceTest {
     @Mock
     private PasswordGenerator passwordGenerator;
 
+    @Mock
+    private PasswordEncoder passwordEncoder;
+
     @InjectMocks
     private TraineeService traineeService;
 
@@ -63,15 +67,16 @@ class TraineeServiceTest {
     void createTrainee_BuildUserAndTrainee() {
         when(usernameGenerator.generateUsername("John", "Doe")).thenReturn("John.Doe");
         when(passwordGenerator.generatePassword()).thenReturn("pass123");
+        when(passwordEncoder.encode("pass123")).thenReturn("$2a$encoded");
 
-        Trainee saved = traineeWithUser("John.Doe", "pass123", true);
+        Trainee saved = traineeWithUser("John.Doe", "$2a$encoded", true);
         when(traineeRepository.save(any(Trainee.class))).thenReturn(saved);
 
         Trainee result = traineeService.createTrainee("John", "Doe", LocalDate.of(1990, 1, 1), "123 St");
 
         assertNotNull(result);
         assertEquals("John.Doe", result.getUser().getUsername());
-        assertEquals("pass123", result.getUser().getPassword());
+        assertEquals("$2a$encoded", result.getUser().getPassword());
         assertTrue(result.getUser().getIsActive());
         verify(traineeRepository).save(any(Trainee.class));
     }

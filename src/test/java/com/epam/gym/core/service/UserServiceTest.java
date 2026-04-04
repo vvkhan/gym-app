@@ -7,13 +7,15 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.time.LocalDateTime;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class UserServiceTest {
@@ -21,24 +23,54 @@ class UserServiceTest {
     @Mock
     private UserRepository userRepository;
 
+    @Mock
+    private PasswordEncoder passwordEncoder;
+
     @InjectMocks
     private UserService userService;
 
     @Test
-    void authenticate_ReturnTrueWhenCredentialsMatch() {
-        when(userRepository.existsByUsernameAndPassword("alice", "pass")).thenReturn(true);
-
-        assertTrue(userService.authenticate("alice", "pass"));
-    }
-
-    @Test
     void changePassword_UpdatesPasswordSuccessfully() {
-        User user = User.builder().username("alice").password("oldPass").build();
+        User user = User.builder().username("alice").password("$2a$encoded").build();
         when(userRepository.findByUsername("alice")).thenReturn(Optional.of(user));
+        when(passwordEncoder.encode("newPass")).thenReturn("$2a$newEncoded");
 
         userService.changePassword("alice", "newPass");
 
-        assertEquals("newPass", user.getPassword());
+        assertEquals("$2a$newEncoded", user.getPassword());
+        assertNotNull(user.getLastLogout());
         verify(userRepository).save(user);
+    }
+
+    @Test
+    void changePassword_ThrowWhenUserNotFound() {
+        when(userRepository.findByUsername("unknown")).thenReturn(Optional.empty());
+
+        assertThrows(NoSuchElementException.class, () ->
+                userService.changePassword("unknown", "new"));
+        verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    void recordLogout_SetsLastLogoutTimestamp() {
+        User user = User.builder().username("alice").build();
+        when(userRepository.findByUsername("alice")).thenReturn(Optional.of(user));
+
+        LocalDateTime before = LocalDateTime.now();
+        userService.recordLogout("alice");
+        LocalDateTime after = LocalDateTime.now();
+
+        assertNotNull(user.getLastLogout());
+        assertFalse(user.getLastLogout().isBefore(before));
+        assertFalse(user.getLastLogout().isAfter(after));
+        verify(userRepository).save(user);
+    }
+
+    @Test
+    void recordLogout_NoOpWhenUserNotFound() {
+        when(userRepository.findByUsername("ghost")).thenReturn(Optional.empty());
+
+        assertDoesNotThrow(() -> userService.recordLogout("ghost"));
+        verify(userRepository, never()).save(any());
     }
 }

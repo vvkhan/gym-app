@@ -3,7 +3,6 @@ package com.epam.gym.core.controller;
 import com.epam.gym.core.dto.request.AddTrainingRequest;
 import com.epam.gym.core.exception.handler.RestExceptionHandler;
 import com.epam.gym.core.facade.GymFacade;
-import com.epam.gym.core.controller.AuthenticationHelper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
@@ -20,13 +19,10 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
 
 import java.time.LocalDate;
-import java.util.Base64;
 import java.util.NoSuchElementException;
 
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -35,9 +31,6 @@ class TrainingControllerTest {
 
     @Mock
     private GymFacade facade;
-
-    @Mock
-    private AuthenticationHelper authHelper;
 
     @InjectMocks
     private TrainingController controller;
@@ -59,117 +52,52 @@ class TrainingControllerTest {
                 .build();
     }
 
-    private static String basicAuth(String username, String password) {
-        return "Basic " + Base64.getEncoder().encodeToString((username + ":" + password).getBytes());
-    }
-
     @Test
-    void addTraining_validRequestReturns200() throws Exception {
-        AddTrainingRequest request = new AddTrainingRequest();
-        request.setTraineeUsername("alice");
-        request.setTrainerUsername("john");
-        request.setTrainingName("Morning Yoga");
-        request.setTrainingDate(LocalDate.of(2024, 6, 15));
-        request.setDuration(60);
-
+    void addTraining_ValidRequestReturns200() throws Exception {
         mockMvc.perform(post("/api/trainings")
-                        .header("Authorization", basicAuth("alice", "pass"))
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(objectMapper.writeValueAsString(validRequest())))
                 .andExpect(status().isOk());
 
-        verify(facade).createTraining("alice", "john", "Morning Yoga",
+        verify(facade).createTraining("Alice.Smith", "John.Smith", "Morning Yoga",
                 LocalDate.of(2024, 6, 15), 60);
     }
 
     @Test
-    void addTraining_missingAuthHeaderReturns401() throws Exception {
-        doThrow(new SecurityException("Missing Authorization header"))
-                .when(authHelper).authenticateTrainee(any(), any());
-
+    void addTraining_MissingTrainingNameReturns400() throws Exception {
         AddTrainingRequest request = new AddTrainingRequest();
-        request.setTraineeUsername("alice");
-        request.setTrainerUsername("john");
-        request.setTrainingName("Morning Yoga");
+        request.setTraineeUsername("Alice.Smith");
+        request.setTrainerUsername("John.Smith");
         request.setTrainingDate(LocalDate.of(2024, 6, 15));
         request.setDuration(60);
 
         mockMvc.perform(post("/api/trainings")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isUnauthorized());
-    }
-
-    @Test
-    void addTraining_invalidCredentialsReturns401() throws Exception {
-        doThrow(new SecurityException("Invalid username or password"))
-                .when(authHelper).authenticateTrainee(any(), any());
-
-        AddTrainingRequest request = new AddTrainingRequest();
-        request.setTraineeUsername("alice");
-        request.setTrainerUsername("john");
-        request.setTrainingName("Morning Yoga");
-        request.setTrainingDate(LocalDate.of(2024, 6, 15));
-        request.setDuration(60);
-
-        mockMvc.perform(post("/api/trainings")
-                        .header("Authorization", basicAuth("alice", "wrong"))
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isUnauthorized());
-    }
-
-    @Test
-    void addTraining_missingTrainingNameReturns400() throws Exception {
-        AddTrainingRequest request = new AddTrainingRequest();
-        request.setTraineeUsername("alice");
-        request.setTrainerUsername("john");
-        request.setTrainingDate(LocalDate.of(2024, 6, 15));
-        request.setDuration(60);
-
-        mockMvc.perform(post("/api/trainings")
-                        .header("Authorization", basicAuth("alice", "pass"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest());
     }
 
     @Test
-    void addTraining_differentTraineeReturns401() throws Exception {
-        doThrow(new SecurityException("Access denied"))
-                .when(authHelper).authenticateTrainee(any(), any());
-
-        AddTrainingRequest request = new AddTrainingRequest();
-        request.setTraineeUsername("alice");
-        request.setTrainerUsername("john");
-        request.setTrainingName("Morning Yoga");
-        request.setTrainingDate(LocalDate.of(2024, 6, 15));
-        request.setDuration(60);
-
-        mockMvc.perform(post("/api/trainings")
-                        .header("Authorization", basicAuth("bob", "pass"))
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isUnauthorized());
-    }
-
-    @Test
-    void addTraining_traineeNotFoundReturns404() throws Exception {
-        doThrow(new NoSuchElementException("Trainee not found: alice"))
-                .when(facade).createTraining("alice", "john", "Morning Yoga",
+    void addTraining_TraineeNotFoundReturns404() throws Exception {
+        doThrow(new NoSuchElementException("Trainee not found: Alice.Smith"))
+                .when(facade).createTraining("Alice.Smith", "John.Smith", "Morning Yoga",
                         LocalDate.of(2024, 6, 15), 60);
 
+        mockMvc.perform(post("/api/trainings")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(validRequest())))
+                .andExpect(status().isNotFound());
+    }
+
+    // Helper
+
+    private AddTrainingRequest validRequest() {
         AddTrainingRequest request = new AddTrainingRequest();
-        request.setTraineeUsername("alice");
-        request.setTrainerUsername("john");
+        request.setTraineeUsername("Alice.Smith");
+        request.setTrainerUsername("John.Smith");
         request.setTrainingName("Morning Yoga");
         request.setTrainingDate(LocalDate.of(2024, 6, 15));
         request.setDuration(60);
-
-        mockMvc.perform(post("/api/trainings")
-                        .header("Authorization", basicAuth("alice", "pass"))
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isNotFound());
+        return request;
     }
 }

@@ -4,14 +4,15 @@ import jakarta.validation.constraints.NotBlank;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import lombok.ToString;
 
 @Getter
 @Setter
 @NoArgsConstructor
-@ToString(exclude = "newPassword")
-public class ChangePasswordRequest {
+public class LoginRequest {
 
     @NotBlank
-    private String newPassword;
+    private String username;
+
+    @NotBlank
+    private String password;
 }

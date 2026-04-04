@@ -11,7 +11,7 @@ import org.mapstruct.Mapping;
 public interface TrainerMapper {
 
     @Mapping(source = "user.username", target = "username")
-    @Mapping(source = "user.password", target = "password")
+    @Mapping(source = "user.rawPassword", target = "password")
     RegistrationResponse toRegistrationResponse(Trainer trainer);
 
     @Mapping(source = "user.firstName", target = "firstName")
