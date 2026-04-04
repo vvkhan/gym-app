@@ -10,7 +10,6 @@ import com.epam.gym.core.dto.response.TrainerSummaryResponse;
 import com.epam.gym.core.dto.response.TrainingResponse;
 import com.epam.gym.core.dto.response.UpdatedTraineeProfileResponse;
 import com.epam.gym.core.facade.GymFacade;
-import com.epam.gym.core.model.UserPrincipal;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -18,10 +17,10 @@ import jakarta.validation.Valid;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -61,9 +60,8 @@ public class TraineeController {
     @ApiResponse(responseCode = "200", description = "Profile returned successfully")
     @ApiResponse(responseCode = "401", description = "Authentication failed")
     @ApiResponse(responseCode = "404", description = "Trainee not found")
-    public ResponseEntity<TraineeProfileResponse> getProfile(
-            @AuthenticationPrincipal UserPrincipal principal) {
-        return ResponseEntity.ok(facade.getTraineeByUsername(principal.getUsername()));
+    public ResponseEntity<TraineeProfileResponse> getProfile(@PathVariable String username) {
+        return ResponseEntity.ok(facade.getTraineeByUsername(username));
     }
 
     @PutMapping("/{username}")
@@ -73,10 +71,10 @@ public class TraineeController {
     @ApiResponse(responseCode = "401", description = "Authentication failed")
     @ApiResponse(responseCode = "404", description = "Trainee not found")
     public ResponseEntity<UpdatedTraineeProfileResponse> updateProfile(
-            @AuthenticationPrincipal UserPrincipal principal,
+            @PathVariable String username,
             @Valid @RequestBody UpdateTraineeRequest body) {
         return ResponseEntity.ok(facade.updateTraineeProfile(
-                principal.getUsername(), body.getFirstName(), body.getLastName(),
+                username, body.getFirstName(), body.getLastName(),
                 body.getDateOfBirth(), body.getAddress(), body.getIsActive()));
     }
 
@@ -84,8 +82,8 @@ public class TraineeController {
     @Operation(summary = "Delete own trainee profile")
     @ApiResponse(responseCode = "200", description = "Trainee deleted successfully")
     @ApiResponse(responseCode = "401", description = "Authentication failed")
-    public ResponseEntity<Void> delete(@AuthenticationPrincipal UserPrincipal principal) {
-        facade.deleteTrainee(principal.getUsername());
+    public ResponseEntity<Void> delete(@PathVariable String username) {
+        facade.deleteTrainee(username);
         return ResponseEntity.ok().build();
     }
 
@@ -95,12 +93,12 @@ public class TraineeController {
     @ApiResponse(responseCode = "401", description = "Authentication failed")
     @ApiResponse(responseCode = "409", description = "Trainee already in requested state")
     public ResponseEntity<Void> activate(
-            @AuthenticationPrincipal UserPrincipal principal,
+            @PathVariable String username,
             @Valid @RequestBody ActivateDeactivateRequest body) {
         if (body.getIsActive()) {
-            facade.activateTrainee(principal.getUsername());
+            facade.activateTrainee(username);
         } else {
-            facade.deactivateTrainee(principal.getUsername());
+            facade.deactivateTrainee(username);
         }
         return ResponseEntity.ok().build();
     }
@@ -110,8 +108,8 @@ public class TraineeController {
     @ApiResponse(responseCode = "200", description = "Trainers returned successfully")
     @ApiResponse(responseCode = "401", description = "Authentication failed")
     public ResponseEntity<List<TrainerSummaryResponse>> getNotAssignedTrainers(
-            @AuthenticationPrincipal UserPrincipal principal) {
-        return ResponseEntity.ok(facade.getNotAssignedTrainers(principal.getUsername()));
+            @PathVariable String username) {
+        return ResponseEntity.ok(facade.getNotAssignedTrainers(username));
     }
 
     @PutMapping("/{username}/trainers")
@@ -121,10 +119,10 @@ public class TraineeController {
     @ApiResponse(responseCode = "401", description = "Authentication failed")
     @ApiResponse(responseCode = "404", description = "Trainer not found")
     public ResponseEntity<List<TrainerSummaryResponse>> updateTrainers(
-            @AuthenticationPrincipal UserPrincipal principal,
+            @PathVariable String username,
             @Valid @RequestBody TraineeTrainersUpdateRequest body) {
         return ResponseEntity.ok(facade.updateTraineeTrainers(
-                principal.getUsername(), new HashSet<>(body.getTrainerUsernames())));
+                username, new HashSet<>(body.getTrainerUsernames())));
     }
 
     @GetMapping("/{username}/trainings")
@@ -132,12 +130,12 @@ public class TraineeController {
     @ApiResponse(responseCode = "200", description = "Trainings returned successfully")
     @ApiResponse(responseCode = "401", description = "Authentication failed")
     public ResponseEntity<List<TrainingResponse>> getTrainings(
-            @AuthenticationPrincipal UserPrincipal principal,
+            @PathVariable String username,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate periodFrom,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate periodTo,
             @RequestParam(required = false) String trainerUsername,
             @RequestParam(required = false) String trainingType) {
         return ResponseEntity.ok(facade.getTraineeTrainings(
-                principal.getUsername(), periodFrom, periodTo, trainerUsername, trainingType));
+                username, periodFrom, periodTo, trainerUsername, trainingType));
     }
 }
