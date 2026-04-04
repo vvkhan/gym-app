@@ -15,6 +15,9 @@ import java.time.LocalDate;
 public class AddTrainingRequest {
 
     @NotBlank
+    private String traineeUsername;
+
+    @NotBlank
     private String trainerUsername;
 
     @NotBlank
