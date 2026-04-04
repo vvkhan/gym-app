@@ -11,12 +11,9 @@ import com.epam.gym.core.dto.response.TrainingResponse;
 import com.epam.gym.core.dto.response.UpdatedTraineeProfileResponse;
 import com.epam.gym.core.exception.handler.RestExceptionHandler;
 import com.epam.gym.core.facade.GymFacade;
-import com.epam.gym.core.model.User;
-import com.epam.gym.core.model.UserPrincipal;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -25,11 +22,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.MediaType;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.context.SecurityContext;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.web.method.annotation.AuthenticationPrincipalArgumentResolver;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
@@ -72,17 +64,10 @@ class TraineeControllerTest {
         LocalValidatorFactoryBean validator = new LocalValidatorFactoryBean();
         validator.afterPropertiesSet();
         mockMvc = MockMvcBuilders.standaloneSetup(controller)
-                .setCustomArgumentResolvers(new AuthenticationPrincipalArgumentResolver())
                 .setControllerAdvice(new RestExceptionHandler())
                 .setMessageConverters(new MappingJackson2HttpMessageConverter(objectMapper))
                 .setValidator(validator)
                 .build();
-        setSecurityContext("Alice.Smith");
-    }
-
-    @AfterEach
-    void clearSecurityContext() {
-        SecurityContextHolder.clearContext();
     }
 
     // Registration (public — no principal needed)
@@ -117,7 +102,7 @@ class TraineeControllerTest {
     // Get profile
 
     @Test
-    void getProfile_UsesAuthenticatedUsername() throws Exception {
+    void getProfile_ReturnsProfile() throws Exception {
         when(facade.getTraineeByUsername("Alice.Smith")).thenReturn(new TraineeProfileResponse());
 
         mockMvc.perform(get("/api/trainees/Alice.Smith"))
@@ -139,7 +124,7 @@ class TraineeControllerTest {
     // Update profile
 
     @Test
-    void updateProfile_UsesAuthenticatedUsername() throws Exception {
+    void updateProfile_ValidRequestReturns200() throws Exception {
         when(facade.updateTraineeProfile(eq("Alice.Smith"), any(), any(), any(), any(), any()))
                 .thenReturn(new UpdatedTraineeProfileResponse());
 
@@ -171,7 +156,7 @@ class TraineeControllerTest {
     // Delete
 
     @Test
-    void delete_UsesAuthenticatedUsername() throws Exception {
+    void delete_CallsFacadeWithUsername() throws Exception {
         mockMvc.perform(delete("/api/trainees/Alice.Smith"))
                 .andExpect(status().isOk());
 
@@ -223,7 +208,7 @@ class TraineeControllerTest {
     // Not assigned trainers
 
     @Test
-    void getNotAssignedTrainers_UsesAuthenticatedUsername() throws Exception {
+    void getNotAssignedTrainers_ReturnsTrainers() throws Exception {
         when(facade.getNotAssignedTrainers("Alice.Smith")).thenReturn(List.of(new TrainerSummaryResponse()));
 
         mockMvc.perform(get("/api/trainees/Alice.Smith/not-assigned-trainers"))
@@ -235,7 +220,7 @@ class TraineeControllerTest {
     // Update trainers list
 
     @Test
-    void updateTrainers_UsesAuthenticatedUsername() throws Exception {
+    void updateTrainers_ValidRequestReturns200() throws Exception {
         when(facade.updateTraineeTrainers(eq("Alice.Smith"), any(Set.class)))
                 .thenReturn(List.of(new TrainerSummaryResponse()));
 
@@ -264,7 +249,7 @@ class TraineeControllerTest {
     // Trainings list
 
     @Test
-    void getTrainings_UsesAuthenticatedUsername() throws Exception {
+    void getTrainings_ReturnsTrainings() throws Exception {
         when(facade.getTraineeTrainings("Alice.Smith", null, null, null, null))
                 .thenReturn(List.of(new TrainingResponse()));
 
@@ -276,26 +261,14 @@ class TraineeControllerTest {
 
     @Test
     void getTrainings_WithFiltersReturns200() throws Exception {
-        when(facade.getTraineeTrainings(eq("Alice.Smith"), any(), any(), eq("John"), eq("Yoga")))
+        when(facade.getTraineeTrainings(eq("Alice.Smith"), any(), any(), eq("John.Smith"), eq("Yoga")))
                 .thenReturn(List.of());
 
         mockMvc.perform(get("/api/trainees/Alice.Smith/trainings")
                         .param("periodFrom", "2024-01-01")
                         .param("periodTo", "2024-12-31")
-                        .param("trainerUsername", "John")
+                        .param("trainerUsername", "John.Smith")
                         .param("trainingType", "Yoga"))
                 .andExpect(status().isOk());
-    }
-
-    // Helper
-
-    private void setSecurityContext(String username) {
-        User user = User.builder().username(username).password("pass").isActive(true).build();
-        UserPrincipal principal = new UserPrincipal(
-                user, List.of(new SimpleGrantedAuthority("ROLE_TRAINEE")));
-        SecurityContext context = SecurityContextHolder.createEmptyContext();
-        context.setAuthentication(new UsernamePasswordAuthenticationToken(
-                principal, null, principal.getAuthorities()));
-        SecurityContextHolder.setContext(context);
     }
 }
