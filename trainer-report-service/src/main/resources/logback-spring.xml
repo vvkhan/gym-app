@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <!--
+                %X{transactionId:-NO_TX} prints the MDC transactionId on every line.
+                When gym-core forwards X-Transaction-Id in its request header,
+                TransactionIdFilter puts it in MDC — so every log line in this service
+                carries the same txId as the originating request in gym-core.
+            -->
+            <pattern>%d{yyyy-MM-dd HH:mm:ss} %-5level [txId=%X{transactionId:-NO_TX}] %logger{20} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <logger name="com.epam.gym.report" level="DEBUG" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+    </logger>
+
+    <logger name="org.springframework.web.servlet.DispatcherServlet" level="DEBUG" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+    </logger>
+
+    <root level="ERROR">
+        <appender-ref ref="CONSOLE"/>
+    </root>
+
+</configuration>

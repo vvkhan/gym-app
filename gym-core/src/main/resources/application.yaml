@@ -1,0 +1,88 @@
+spring:
+  application:
+    name: gym-core
+  flyway:
+    locations: classpath:db/migration
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+  security:
+    oauth2:
+      client:
+        registration:
+          # ID must match withClientRegistrationId("auth-service") in FeignOAuth2Config
+          auth-service:
+            client-id: gym-core
+            client-secret: ${GYM_CORE_CLIENT_SECRET:gym-core-dev-secret}
+            authorization-grant-type: client_credentials
+            scope: report:write,report:read
+        provider:
+          auth-service:
+            token-uri: http://localhost:9000/oauth2/token
+
+springdoc:
+  api-docs:
+    enabled: true
+    path: /v3/api-docs
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui.html
+    disable-swagger-default-url: true
+
+server:
+  port: 8080
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+  instance:
+    prefer-ip-address: true
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      trainer-report-service:
+        sliding-window-size: 10
+        # Configured percentage that determines when circuit breaker transitions to an open state,
+        # stopping traffic to a failing service (default threshold is 50%)
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 10s
+        permitted-number-of-calls-in-half-open-state: 3
+        register-health-indicator: true
+  retry:
+    instances:
+      trainer-report-service:
+        # 3 attempts total (1 original + 2 retries)
+        max-attempts: 3
+        # Start with 500ms, double on each retry: 500ms → 1000ms
+        wait-duration: 500ms
+        enable-exponential-backoff: true
+        exponential-backoff-multiplier: 2
+        # Don't retry when the circuit is already OPEN, fail fast instead
+        ignore-exceptions:
+          - io.github.resilience4j.circuitbreaker.CallNotPermittedException
+
+feign:
+  circuitbreaker:
+    enabled: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,prometheus,metrics
+  endpoint:
+    health:
+      show-details: always
+
+app:
+  jwt:
+    secret: "${APP_JWT_SECRET:ZGV2LXNlY3JldC1rZXktYXQtbGVhc3QtMzItY2hhcnM=}"
+    expiration-ms: 86400000  # 24 hours
+  cors:
+    allowed-origins: "${CORS_ALLOWED_ORIGINS:http://localhost:8080}"
+    allowed-methods: "${CORS_ALLOWED_METHODS:GET,POST,PUT,DELETE,PATCH,OPTIONS}"
+    allowed-headers: "${CORS_ALLOWED_HEADERS:*}"
+    allow-credentials: true
+    max-age: 3600

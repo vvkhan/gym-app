@@ -1,0 +1,61 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: trainer-report-service
+  datasource:
+    url: jdbc:h2:mem:reportdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE;DATABASE_TO_UPPER=FALSE;NON_KEYWORDS=YEAR,MONTH
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+  h2:
+    console:
+      enabled: true  # H2 browser console available at /h2-console for debugging
+      settings:
+        web-allow-others: true  # Required when running in Docker — browser connects from outside the container
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          # Spring Security reads /.well-known/openid-configuration from this URI at startup,
+          # discovers the jwks_uri, fetches the RSA public key, and validates all incoming JWTs locally.
+          # Must match app.auth.issuer-uri in auth-service application.yaml.
+          issuer-uri: http://localhost:9000
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+  instance:
+    prefer-ip-address: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,prometheus,metrics
+  endpoint:
+    health:
+      show-details: always
+
+springdoc:
+  api-docs:
+    enabled: true
+    path: /v3/api-docs
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui.html
+    disable-swagger-default-url: true
+
+app:
+  cors:
+    allowed-origins: "${CORS_ALLOWED_ORIGINS:http://localhost:8081}"
+    allowed-methods: "${CORS_ALLOWED_METHODS:GET,POST,OPTIONS}"
+    allowed-headers: "${CORS_ALLOWED_HEADERS:*}"
+    allow-credentials: true
+    max-age: 3600

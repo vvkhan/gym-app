@@ -1,0 +1,23 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/docker
+    username: docker
+    password: docker
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+logging:
+  level:
+    com.epam.gym: DEBUG
+
+app:
+  jwt:
+    # Base64-encoded local dev secret — do not use in production
+    secret: "bG9jYWwtZGV2LXNlY3JldC1rZXktZm9yLWd5bS1hcHAtZG8tbm90LXVzZS1pbi1wcm9kdWN0aW9u"
