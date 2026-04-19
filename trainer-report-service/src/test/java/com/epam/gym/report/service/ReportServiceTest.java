@@ -2,6 +2,7 @@ package com.epam.gym.report.service;
 
 import com.epam.gym.report.dto.ActionType;
 import com.epam.gym.report.dto.WorkloadRequest;
+import com.epam.gym.report.mapper.WorkloadMapper;
 import com.epam.gym.report.model.TrainerWorkload;
 import com.epam.gym.report.model.TrainingMonth;
 import com.epam.gym.report.model.TrainingYear;
@@ -28,6 +29,9 @@ class ReportServiceTest {
 
     @Mock
     TrainerWorkloadRepository repository;
+
+    @Mock
+    WorkloadMapper workloadMapper;
 
     @InjectMocks
     ReportService service;
@@ -66,13 +70,6 @@ class ReportServiceTest {
 
         assertThatThrownBy(() -> service.getSummary("unknown"))
                 .isInstanceOf(NoSuchElementException.class);
-    }
-
-    @Test
-    void getMonthlyDuration_returnsZeroWhenNoDataRecorded() {
-        when(repository.findByUsername("john.doe")).thenReturn(Optional.empty());
-
-        assertThat(service.getMonthlyDuration("john.doe", 2024, 3)).isEqualTo(0);
     }
 
     // Helpers

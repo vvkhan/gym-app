@@ -4,6 +4,7 @@ import com.epam.gym.report.aspect.LogExecution;
 import com.epam.gym.report.dto.ActionType;
 import com.epam.gym.report.dto.WorkloadRequest;
 import com.epam.gym.report.dto.WorkloadSummaryResponse;
+import com.epam.gym.report.mapper.WorkloadMapper;
 import com.epam.gym.report.model.TrainerWorkload;
 import com.epam.gym.report.model.TrainingMonth;
 import com.epam.gym.report.model.TrainingYear;
@@ -18,14 +19,18 @@ import java.util.NoSuchElementException;
 public class ReportService {
 
     private final TrainerWorkloadRepository repository;
+    private final WorkloadMapper workloadMapper;
 
-    public ReportService(TrainerWorkloadRepository repository) {
+    public ReportService(TrainerWorkloadRepository repository, WorkloadMapper workloadMapper) {
         this.repository = repository;
+        this.workloadMapper = workloadMapper;
     }
 
-    // Processing of ADD/DELETE training events from gym-core:
-    // For ADD: adds the duration to the trainer's monthly total
-    // For DELETE: subtracts it (floor at 0 to guard against out-of-order events)
+    /**
+     * Processes ADD/DELETE training events from gym-core.
+     * For ADD: adds the duration to the trainer's monthly total.
+     * For DELETE: subtracts it (floor at 0 to guard against out-of-order events).
+     */
     @Transactional
     public void processWorkload(WorkloadRequest request) {
         TrainerWorkload workload = repository
@@ -66,21 +71,7 @@ public class ReportService {
     public WorkloadSummaryResponse getSummary(String username) {
         TrainerWorkload workload = repository.findByUsername(username)
                 .orElseThrow(() -> new NoSuchElementException("No workload data for trainer: " + username));
-        return toResponse(workload);
-    }
-
-    // Returns total training duration (in minutes) for trainer in specific month
-    @Transactional(readOnly = true)
-    public int getMonthlyDuration(String username, int year, int month) {
-        return repository.findByUsername(username)
-                .flatMap(w -> w.getYears().stream()
-                        .filter(y -> y.getYear() == year)
-                        .findFirst())
-                .flatMap(y -> y.getMonths().stream()
-                        .filter(m -> m.getMonth() == month)
-                        .findFirst())
-                .map(TrainingMonth::getTotalDurationMinutes)
-                .orElse(0);
+        return workloadMapper.toResponse(workload);
     }
 
     // Helpers
@@ -111,27 +102,4 @@ public class ReportService {
         return m;
     }
 
-    private WorkloadSummaryResponse toResponse(TrainerWorkload workload) {
-        WorkloadSummaryResponse response = new WorkloadSummaryResponse();
-        response.setUsername(workload.getUsername());
-        response.setFirstName(workload.getFirstName());
-        response.setLastName(workload.getLastName());
-        response.setActive(workload.isActive());
-        response.setYears(workload.getYears().stream()
-                .map(y -> {
-                    WorkloadSummaryResponse.YearSummary yearSummary = new WorkloadSummaryResponse.YearSummary();
-                    yearSummary.setYear(y.getYear());
-                    yearSummary.setMonths(y.getMonths().stream()
-                            .map(m -> {
-                                WorkloadSummaryResponse.MonthSummary monthSummary = new WorkloadSummaryResponse.MonthSummary();
-                                monthSummary.setMonth(m.getMonth());
-                                monthSummary.setTotalDurationMinutes(m.getTotalDurationMinutes());
-                                return monthSummary;
-                            })
-                            .toList());
-                    return yearSummary;
-                })
-                .toList());
-        return response;
-    }
 }
