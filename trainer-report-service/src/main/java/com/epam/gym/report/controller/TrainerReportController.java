@@ -26,8 +26,10 @@ public class TrainerReportController {
         this.reportService = reportService;
     }
 
-    // Called by gym-core every time training is added or deleted
-    // Requires scope: report:write
+    /**
+     * Called by gym-core every time a training is added or deleted.
+     * Requires scope: {@code report:write}.
+     */
     @PostMapping
     @Operation(summary = "Update trainer workload")
     @ApiResponse(responseCode = "200", description = "Workload updated successfully")
@@ -38,8 +40,10 @@ public class TrainerReportController {
         return ResponseEntity.ok().build();
     }
 
-    // Returns full workload summary for trainer (all years and months)
-    // Requires scope: report:read
+    /**
+     * Returns full workload summary for a trainer (all years and months).
+     * Requires scope: {@code report:read}.
+     */
     @GetMapping("/{username}")
     @Operation(summary = "Get full trainer workload summary")
     @ApiResponse(responseCode = "200", description = "Summary returned")
@@ -48,15 +52,4 @@ public class TrainerReportController {
         return ResponseEntity.ok(reportService.getSummary(username));
     }
 
-    // Returns total training minutes for a trainer in a specific month
-    // Returns 0 if no trainings have been recorded for that period
-    // Requires scope: report:read
-    @GetMapping("/{username}/{year}/{month}")
-    @Operation(summary = "Get trainer workload for a specific month")
-    @ApiResponse(responseCode = "200", description = "Duration in minutes returned")
-    public ResponseEntity<Integer> getMonthlyDuration(@PathVariable String username,
-                                                      @PathVariable int year,
-                                                      @PathVariable int month) {
-        return ResponseEntity.ok(reportService.getMonthlyDuration(username, year, month));
-    }
 }

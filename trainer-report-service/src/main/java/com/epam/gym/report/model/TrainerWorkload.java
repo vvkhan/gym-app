@@ -36,8 +36,10 @@ public class TrainerWorkload {
     @Column(name = "is_active")
     private boolean isActive;
 
-    // cascade = ALL + orphanRemoval: adding/removing years via this list
-    // is automatically persisted and cleaned up
+    /**
+     * cascade = ALL + orphanRemoval: adding/removing years via this list
+     * is automatically persisted and cleaned up
+     */
     @OneToMany(mappedBy = "workload", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<TrainingYear> years = new ArrayList<>();
 }

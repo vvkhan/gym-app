@@ -106,15 +106,6 @@ class TrainerReportControllerTest {
                 .andExpect(status().isNotFound());
     }
 
-    @Test
-    void getMonthlyDuration_returns200WithValue() throws Exception {
-        when(reportService.getMonthlyDuration("john.doe", 2024, 3)).thenReturn(120);
-
-        mockMvc.perform(get("/api/report/john.doe/2024/3"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$").value(120));
-    }
-
     // -------------------------------------------------------------------------
     // Helper
     // -------------------------------------------------------------------------

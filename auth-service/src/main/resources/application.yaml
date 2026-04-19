@@ -4,6 +4,23 @@ server:
 spring:
   application:
     name: auth-service
+  security:
+    oauth2:
+      authorizationserver:
+        client:
+          gym-core-client-id:
+            registration:
+              client-id: gym-core
+              client-secret: "{noop}${app.security.gym-core-client-secret}"
+              client-authentication-methods:
+                - client_secret_basic
+              authorization-grant-types:
+                - client_credentials
+              scopes:
+                - report:write
+                - report:read
+            token:
+              access-token-time-to-live: PT5M
 
 eureka:
   client:
