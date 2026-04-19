@@ -1,0 +1,48 @@
+server:
+  port: 9000
+
+spring:
+  application:
+    name: auth-service
+  security:
+    oauth2:
+      authorizationserver:
+        client:
+          gym-core-client-id:
+            registration:
+              client-id: gym-core
+              client-secret: "{noop}${app.security.gym-core-client-secret}"
+              client-authentication-methods:
+                - client_secret_basic
+              authorization-grant-types:
+                - client_credentials
+              scopes:
+                - report:write
+                - report:read
+            token:
+              access-token-time-to-live: PT5M
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+  instance:
+    prefer-ip-address: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: always
+
+app:
+  auth:
+    # Must match what trainer-report-service configures as spring.security.oauth2.resourceserver.jwt.issuer-uri
+    issuer-uri: http://localhost:9000
+  security:
+    # Secret gym-core presents when calling POST /oauth2/token
+    # Override via GYM_CORE_CLIENT_SECRET environment variable in all environments
+    gym-core-client-secret: ${GYM_CORE_CLIENT_SECRET:gym-core-dev-secret}

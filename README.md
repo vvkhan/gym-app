@@ -1,6 +1,6 @@
 # Gym Application
 
-## Part 3: Spring Boot
+## Microservices
 
 ### Notes
 
@@ -18,7 +18,8 @@ Unit tests for `model`, `dto`, `mapper` and `facade` classes were not implemente
 
 ***Preconditions:***
 - Java 17
-- PostgreSQL running on `localhost:5432` (`pgcrypto` must be enabled for DB)
+- Docker Desktop running
+- No processes occupying ports 5432, 8080, 8081, 8761, 9000
 
 ***Spring Profiles:***
 
@@ -29,84 +30,53 @@ Unit tests for `model`, `dto`, `mapper` and `facade` classes were not implemente
 | `stg` | Staging server | `DB_URL`, `DB_USERNAME`, `DB_PASSWORD` env vars |
 | `prod` | Production | `DB_URL`, `DB_USERNAME`, `DB_PASSWORD` env vars |
 
-***Steps:***
-- Copy `src/main/resources/application-local.yaml.example` to `src/main/resources/application-local.yaml` and fill in your database credentials and JWT secret
-  - Generate a JWT secret with: `openssl rand -base64 32`
-- Build the JAR with `./mvnw package -DskipTests`
-- Run locally with `java -jar target/gym-app-1.0.0-SNAPSHOT.jar --spring.profiles.active=local`
-- Run with a profile with `java -jar target/gym-app-1.0.0-SNAPSHOT.jar --spring.profiles.active=dev`
-  - Non-local profiles require the `JWT_SECRET` environment variable in addition to `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`
-- The application will be available at `http://localhost:8080/api/...`
-- Use Swagger UI at `http://localhost:8080/swagger-ui.html` to test the API
+***Details:***
+
+- From the project root, run `docker-compose up --build` (or `docker compose up --build` if `docker-compose` command not found).
+- Check all services are healthy with `docker compose ps`
+
+
+- Verify Eureka at `http://localhost:8761`
+
+
+- Test `gym-core` API at `http://localhost:8080/swagger-ui.html'
+  - Postgres DB credentials: 
+    - Host: localhost
+      Port: 5432
+      DB name: gymdb
+      User: docker
+      Password: docker
+
+
+- Test `trainer-report-service` API at `http://localhost:8081/swagger-ui.html`
+  - Use `curl -s -X POST http://localhost:9000/oauth2/token -u "gym-core:gym-core-dev-secret" -d "grant_type=client_credentials&scope=report:read report:write" | python3 -m json.tool` to get access token for getting reports
+  - H2 DB available at `http://localhost:8081/h2-console`. Driver class: org.h2.Driver, JDBC URL: jdbc:h2:mem:reportdb, username: sa, password: (leave empty).
+
+
+- To get the `transactionId` of the transactions on `gym-core` side that triggered changes in workload reports on `trainer-report-service`, use `docker compose logs trainer-report-service | grep "POST /api/report"`
+  - Use `txId` in `docker compose logs gym-core trainer-report-service | grep "<txId>"` to retrieve the relevant logs.
+
+
 - To stop the application, press `Ctrl+C`
-
-
-***Swagger UI:***
-
-Interactive API documentation is available at `http://localhost:8080/swagger-ui.html` once the application is running.
-
-If Swagger UI opens but shows an invalid-definition error, check `http://localhost:8080/v3/api-docs` directly. The response must start with an `openapi` field. If it does not, run a clean rebuild with `./mvnw clean package -DskipTests` and verify the application starts with the expected config and database connection.
-
+- To remove containers, use `docker-compose down`
 
 ***Metrics (Prometheus):***
 
 The application exposes Prometheus metrics at `http://localhost:8080/actuator/prometheus`.
 
 Two custom gauges are included:
-- `gym_users_registered` — current number of registered users in the database
-- `gym_trainings` — current number of trainings in the database
+- For `gym-core`:
+  - `gym_users_registered` — current number of registered users in the database
+  - `gym_trainings` — current number of trainings in the database
+- For `trainer-report-service`:
+  - `report_trainers_tracked` - current number of trainers with recorded workload
 
-To view all metrics, open the URL in a browser or run:
-```bash
-curl http://localhost:8080/actuator/prometheus
-```
-
-To filter for custom gym metrics only:
-```bash
-curl -s http://localhost:8080/actuator/prometheus | grep gym_
-```
-
-Or open the following URLs in a browser:
+To view all metrics, open the URL in a browser
 - `http://localhost:8080/actuator/metrics/gym.users.registered` for gym users registered
 - `http://localhost:8080/actuator/metrics/gym.trainings.total` for total amount of trainings
+- `http://localhost:8081/actuator/metrics/report.trainers.tracked` for total number of trainers with recorded workload
 
 ***Health Check:***
 
-The application exposes a health endpoint at `http://localhost:8080/actuator/health`.
+The application exposes a health endpoint at `http://localhost:8080/actuator/health` and `http://localhost:8081/actuator/health`.
 
-It includes a custom `trainingTypes` indicator that verifies the `TrainingType` reference data is seeded in the database. Since trainers require a specialization, the app cannot function correctly without it.
-
-Example response when healthy (including auto-enabled indicators):
-```json
-{
-  "status": "UP",
-  "components": {
-    "db": {
-      "status": "UP",
-      "details": {
-        "database": "PostgreSQL",
-        "validationQuery": "isValid()"
-      }
-    },
-    "diskSpace": {
-      "status": "UP",
-      "details": {
-        "total": 994662584320,
-        "free": 391698587648,
-        "threshold": 10485760,
-        "path": "/path/to/your/project/.",
-        "exists": true
-      }
-    },
-    "ping": {
-      "status": "UP"
-    },
-    "trainingTypes": {
-      "status": "UP",
-      "details": {
-        "trainingTypes": 5
-      }
-    }
-  }
-}
-```
