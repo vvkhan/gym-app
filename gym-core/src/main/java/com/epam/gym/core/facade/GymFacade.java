@@ -1,7 +1,7 @@
 package com.epam.gym.core.facade;
 
 import com.epam.gym.core.aspect.LogExecution;
-import com.epam.gym.core.client.ReportNotificationService;
+import com.epam.gym.core.messaging.TrainingEventPublisher;
 import com.epam.gym.core.dto.request.ActionType;
 import com.epam.gym.core.dto.request.WorkloadRequest;
 import com.epam.gym.core.dto.response.RegistrationResponse;
@@ -47,7 +47,7 @@ public class GymFacade {
     private final TrainerSummaryMapper trainerSummaryMapper;
     private final TrainingMapper trainingMapper;
     private final TrainingTypeMapper trainingTypeMapper;
-    private final ReportNotificationService reportNotificationService;
+    private final TrainingEventPublisher trainingEventPublisher;
 
     public GymFacade(TraineeService traineeService,
                      TrainerService trainerService,
@@ -57,7 +57,7 @@ public class GymFacade {
                      TrainerSummaryMapper trainerSummaryMapper,
                      TrainingMapper trainingMapper,
                      TrainingTypeMapper trainingTypeMapper,
-                     ReportNotificationService reportNotificationService) {
+                     TrainingEventPublisher trainingEventPublisher) {
         this.traineeService = traineeService;
         this.trainerService = trainerService;
         this.trainingService = trainingService;
@@ -66,7 +66,7 @@ public class GymFacade {
         this.trainerSummaryMapper = trainerSummaryMapper;
         this.trainingMapper = trainingMapper;
         this.trainingTypeMapper = trainingTypeMapper;
-        this.reportNotificationService = reportNotificationService;
+        this.trainingEventPublisher = trainingEventPublisher;
     }
 
     // -------------------------------------------------------------------------
@@ -191,15 +191,8 @@ public class GymFacade {
     // -------------------------------------------------------------------------
 
     /**
-     * Sends a workload event to the report service.
-     *
-     * The transactionId from MDC is forwarded as X-Transaction-Id so the report
-     * service logs carry the same txId as this gym-core request — enabling
-     * cross-service log correlation (requirement 9).
-     *
-     * If the report service is unreachable the circuit breaker routes to
-     * ReportServiceClientFallback, which logs the dropped event and returns
-     * 200 so the caller is unaffected.
+     * Publishes a workload event to ActiveMQ after the DB transaction has committed.
+     * The transactionId from MDC is forwarded as a JMS property for end-to-end log correlation.
      */
     private void notifyReportService(Training training, ActionType action) {
         String txId = Optional.ofNullable(MDC.get("transactionId")).orElse("no-tx");
@@ -214,6 +207,6 @@ public class GymFacade {
                 training.getDuration(),
                 action
         );
-        reportNotificationService.notify(txId, request);
+        trainingEventPublisher.publish(txId, request);
     }
 }
