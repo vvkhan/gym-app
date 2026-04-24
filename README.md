@@ -65,9 +65,8 @@ Check the report with ` mvn test && open gym-core/target/site/jacoco/index.html 
 
 - Verify ActiveMQ at `http://localhost:8161` (credentials: `admin` / `admin`)
   - Queue `training.events` — shows enqueued/dequeued counts for workload events sent by `gym-core`
-  - Queue `training.events.dlq` — appears when an invalid message (missing required fields) is routed there by the listener
-    - To send an invalid message for DLQ, use `curl -u admin:admin -X POST "http://localhost:8161/api/message/training.events?type=queue&_type=WorkloadRequest" -H "Content-Type: text/plain" -d '{"firstName":"Bad","lastName":"Message","trainingDurationMinutes":30}'`
-    - Check `trainer-report-service` logs to verify: look for `ERROR [txId=no-tx] c.e.g.r.m.TrainingEventListener - [txId=no-tx] Invalid message routed to DLQ — violations` and `ERROR [txId=NO_TX] c.e.g.r.m.DeadLetterQueueListener - Dead letter received`
+  - Queue `training.events.dlq` — `individualDeadLetterStrategy` auto-routes failed messages to `training.events.dlq`     
+    after 6 retries (default for ActiveMQ). DLQ behaviour is covered by unit tests (`TrainingEventListenerTest.invalidMessage_throwsSoBrokerRoutesToDlq()`).
 
 
 - To trace a request end-to-end across both services, find the `txId` in `gym-core` logs after creating a training:

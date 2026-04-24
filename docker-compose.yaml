@@ -24,6 +24,8 @@ services:
     environment:
       ACTIVEMQ_CONNECTION_USER: activemq
       ACTIVEMQ_CONNECTION_PASSWORD: activemq
+    volumes:
+      - ./activemq/activemq.xml:/opt/apache-activemq/conf/activemq.xml
     healthcheck:
       test: ["CMD-SHELL", "bash -c 'echo > /dev/tcp/localhost/61616' 2>/dev/null"]
       interval: 15s
