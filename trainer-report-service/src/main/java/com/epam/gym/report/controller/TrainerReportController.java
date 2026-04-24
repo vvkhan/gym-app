@@ -28,7 +28,7 @@ public class TrainerReportController {
 
     /**
      * Called by gym-core every time a training is added or deleted.
-     * Requires scope: {@code report:write}.
+     * Requires scope: report:write.
      */
     @PostMapping
     @Operation(summary = "Update trainer workload")
@@ -42,7 +42,7 @@ public class TrainerReportController {
 
     /**
      * Returns full workload summary for a trainer (all years and months).
-     * Requires scope: {@code report:read}.
+     * Requires scope: report:read.
      */
     @GetMapping("/{username}")
     @Operation(summary = "Get full trainer workload summary")

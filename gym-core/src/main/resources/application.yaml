@@ -6,19 +6,10 @@ spring:
   jackson:
     serialization:
       write-dates-as-timestamps: false
-  security:
-    oauth2:
-      client:
-        registration:
-          # ID must match withClientRegistrationId("auth-service") in FeignOAuth2Config
-          auth-service:
-            client-id: gym-core
-            client-secret: ${GYM_CORE_CLIENT_SECRET:gym-core-dev-secret}
-            authorization-grant-type: client_credentials
-            scope: report:write,report:read
-        provider:
-          auth-service:
-            token-uri: http://localhost:9000/oauth2/token
+  activemq:
+    broker-url: tcp://localhost:61616
+    user: activemq
+    password: activemq
 
 springdoc:
   api-docs:
@@ -39,34 +30,6 @@ eureka:
   instance:
     prefer-ip-address: true
 
-resilience4j:
-  circuitbreaker:
-    instances:
-      trainer-report-service:
-        sliding-window-size: 10
-        # Configured percentage that determines when circuit breaker transitions to an open state,
-        # stopping traffic to a failing service (default threshold is 50%)
-        failure-rate-threshold: 50
-        wait-duration-in-open-state: 10s
-        permitted-number-of-calls-in-half-open-state: 3
-        register-health-indicator: true
-  retry:
-    instances:
-      trainer-report-service:
-        # 3 attempts total (1 original + 2 retries)
-        max-attempts: 3
-        # Start with 500ms, double on each retry: 500ms → 1000ms
-        wait-duration: 500ms
-        enable-exponential-backoff: true
-        exponential-backoff-multiplier: 2
-        # Don't retry when the circuit is already OPEN, fail fast instead
-        ignore-exceptions:
-          - io.github.resilience4j.circuitbreaker.CallNotPermittedException
-
-feign:
-  circuitbreaker:
-    enabled: true
-
 management:
   endpoints:
     web:
@@ -86,3 +49,5 @@ app:
     allowed-headers: "${CORS_ALLOWED_HEADERS:*}"
     allow-credentials: true
     max-age: 3600
+  messaging:
+    training-events-queue: training.events

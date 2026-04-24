@@ -7,19 +7,28 @@
 **Unit Tests:**
 
 `Jacoco` is utilized for evaluating test coverage.
-- `util` - 100% coverage
-- `exception/handler` - 100% coverage
-- `service` - 82% coverage
-- `controller` - 97% coverage
 
-Unit tests for `model`, `dto`, `mapper` and `facade` classes were not implemented since they contain no business logic.
+- `gym-core`:
+  - `util` - 100% coverage
+  - `exception/handler` - 100% coverage
+  - `service` - 87% coverage
+  - `controller` - 98% coverage
+  - `messaging` - 57%
+
+- `trainer-report-service`:
+  - `exception` - 100%
+  - `service` - 95%
+  - `controller` - 100%
+  - `messaging` - 73%
+
+Check the report with ` mvn test && open gym-core/target/site/jacoco/index.html trainer-report-service/target/site/jacoco/index.html`.
 
 **FOR DEMO**
 
 ***Preconditions:***
 - Java 17
 - Docker Desktop running
-- No processes occupying ports 5432, 8080, 8081, 8761, 9000
+- No processes occupying ports 5432, 8080, 8081, 8761, 9000, 61616, 8161
 
 ***Spring Profiles:***
 
@@ -32,7 +41,7 @@ Unit tests for `model`, `dto`, `mapper` and `facade` classes were not implemente
 
 ***Details:***
 
-- From the project root, run `docker-compose up --build` (or `docker compose up --build` if `docker-compose` command not found).
+- From the project root, run `docker compose up --build`
 - Check all services are healthy with `docker compose ps`
 
 
@@ -49,16 +58,26 @@ Unit tests for `model`, `dto`, `mapper` and `facade` classes were not implemente
 
 
 - Test `trainer-report-service` API at `http://localhost:8081/swagger-ui.html`
-  - Use `curl -s -X POST http://localhost:9000/oauth2/token -u "gym-core:gym-core-dev-secret" -d "grant_type=client_credentials&scope=report:read report:write" | python3 -m json.tool` to get access token for getting reports
+  - The `GET /api/report/{username}` endpoint requires a Bearer token with `report:read` scope. Obtain one with:
+    `curl -s -X POST http://localhost:9000/oauth2/token -u "gym-core:gym-core-dev-secret" -d "grant_type=client_credentials&scope=report:read" | python3 -m json.tool`
   - H2 DB available at `http://localhost:8081/h2-console`. Driver class: org.h2.Driver, JDBC URL: jdbc:h2:mem:reportdb, username: sa, password: (leave empty).
 
 
-- To get the `transactionId` of the transactions on `gym-core` side that triggered changes in workload reports on `trainer-report-service`, use `docker compose logs trainer-report-service | grep "POST /api/report"`
-  - Use `txId` in `docker compose logs gym-core trainer-report-service | grep "<txId>"` to retrieve the relevant logs.
+- Verify ActiveMQ at `http://localhost:8161` (credentials: `admin` / `admin`)
+  - Queue `training.events` — shows enqueued/dequeued counts for workload events sent by `gym-core`
+  - Queue `training.events.dlq` — `individualDeadLetterStrategy` auto-routes failed messages to `training.events.dlq`     
+    after 6 retries (default for ActiveMQ). DLQ behaviour is covered by unit tests (`TrainingEventListenerTest.invalidMessage_throwsSoBrokerRoutesToDlq()`).
+
+
+- To trace a request end-to-end across both services, find the `txId` in `gym-core` logs after creating a training:
+  `docker compose logs gym-core | grep "Published ADD"`
+  - Copy the `txId` value and search across both services:
+  `docker compose logs gym-core trainer-report-service | grep "<txId>"`
+  - The same `txId` appears in `gym-core` (publish) and `trainer-report-service` (consume) confirming the message was delivered and processed.
 
 
 - To stop the application, press `Ctrl+C`
-- To remove containers, use `docker-compose down`
+- To remove containers, use `docker compose down`
 
 ***Metrics (Prometheus):***
 
