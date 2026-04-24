@@ -7,9 +7,7 @@ import jakarta.validation.Validator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jms.annotation.JmsListener;
-import org.springframework.jms.core.JmsTemplate;
 import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.stereotype.Component;
 
@@ -22,21 +20,16 @@ public class TrainingEventListener {
     private static final Logger log = LoggerFactory.getLogger(TrainingEventListener.class);
 
     private final ReportService reportService;
-    private final JmsTemplate jmsTemplate;
     private final Validator validator;
 
-    @Value("${app.messaging.dead-letter-queue}")
-    private String deadLetterQueue;
-
-    public TrainingEventListener(ReportService reportService, JmsTemplate jmsTemplate, Validator validator) {
+    public TrainingEventListener(ReportService reportService, Validator validator) {
         this.reportService = reportService;
-        this.jmsTemplate = jmsTemplate;
         this.validator = validator;
     }
 
     /**
      * Consumes training workload events published by gym-core.
-     * Invalid messages (missing required fields) are routed to the DLQ instead of processed.
+     * Throws on validation failure so ActiveMQ retries and eventually routes to DLQ automatically.
      */
     @JmsListener(destination = "${app.messaging.training-events-queue}")
     public void onTrainingEvent(WorkloadRequest request,
@@ -49,9 +42,8 @@ public class TrainingEventListener {
                 String reasons = violations.stream()
                         .map(v -> v.getPropertyPath() + " " + v.getMessage())
                         .collect(Collectors.joining(", "));
-                log.error("[txId={}] Invalid message routed to DLQ — violations: {}", resolvedTxId, reasons);
-                jmsTemplate.convertAndSend(deadLetterQueue, request);
-                return;
+                log.error("[txId={}] Invalid message, will be routed to DLQ by broker — violations: {}", resolvedTxId, reasons);
+                throw new IllegalArgumentException("Invalid WorkloadRequest: " + reasons);
             }
 
             log.debug("[txId={}] Received {} event for trainer={}", resolvedTxId,
