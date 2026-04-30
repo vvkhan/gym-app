@@ -1,17 +1,15 @@
 package com.epam.gym.report.mapper;
 
 import com.epam.gym.report.dto.WorkloadSummaryResponse;
-import com.epam.gym.report.model.TrainerWorkload;
-import com.epam.gym.report.model.TrainingMonth;
-import com.epam.gym.report.model.TrainingYear;
+import com.epam.gym.report.model.TrainerSummary;
 import org.mapstruct.Mapper;
 
 @Mapper
 public interface WorkloadMapper {
 
-    WorkloadSummaryResponse toResponse(TrainerWorkload workload);
+    WorkloadSummaryResponse toResponse(TrainerSummary summary);
 
-    WorkloadSummaryResponse.YearSummary toYearSummary(TrainingYear year);
+    WorkloadSummaryResponse.YearSummary toYearSummary(TrainerSummary.YearSummary year);
 
-    WorkloadSummaryResponse.MonthSummary toMonthSummary(TrainingMonth month);
+    WorkloadSummaryResponse.MonthSummary toMonthSummary(TrainerSummary.MonthSummary month);
 }

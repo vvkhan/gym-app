@@ -37,7 +37,6 @@ public class SecurityConfig {
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/actuator/**").permitAll()
-                        .requestMatchers("/h2-console/**").permitAll()
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                         // Scope-based access: Spring maps OAuth2 scope "report:write" -> authority "SCOPE_report:write"
                         .requestMatchers(HttpMethod.POST, "/api/report").hasAuthority("SCOPE_report:write")

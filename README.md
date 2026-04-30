@@ -28,7 +28,7 @@ Check the report with ` mvn test && open gym-core/target/site/jacoco/index.html 
 ***Preconditions:***
 - Java 17
 - Docker Desktop running
-- No processes occupying ports 5432, 8080, 8081, 8761, 9000, 61616, 8161
+- No processes occupying ports 5432, 27017, 8080, 8081, 8761, 9000, 61616, 8161
 
 ***Spring Profiles:***
 
@@ -60,7 +60,10 @@ Check the report with ` mvn test && open gym-core/target/site/jacoco/index.html 
 - Test `trainer-report-service` API at `http://localhost:8081/swagger-ui.html`
   - The `GET /api/report/{username}` endpoint requires a Bearer token with `report:read` scope. Obtain one with:
     `curl -s -X POST http://localhost:9000/oauth2/token -u "gym-core:gym-core-dev-secret" -d "grant_type=client_credentials&scope=report:read" | python3 -m json.tool`
-  - H2 DB available at `http://localhost:8081/h2-console`. Driver class: org.h2.Driver, JDBC URL: jdbc:h2:mem:reportdb, username: sa, password: (leave empty).
+  - MongoDB available at `mongodb://localhost:27017/trainer_report`. Connect with `mongosh mongodb://localhost:27017/trainer_report` or via `docker exec -it gym-app-mongodb-1 mongosh trainer_report`. Workload documents are stored in the `trainer_summary` collection.
+  - To verify the compound index `idx_last_first_name` is used for name-based lookups, run the following in mongosh (run with `docker exec -it gym-app-mongodb-1 mongosh trainer_report`) after at least one training has been created via the API:
+    `db.trainer_summary.find({ lastName: "Smith", firstName: "John" }).explain("executionStats")`
+    In the output, `winningPlan` should show `IXSCAN` (meaning MongoDB used an index to narrow down the results) with `indexName: "idx_last_first_name"`.
 
 
 - Verify ActiveMQ at `http://localhost:8161` (credentials: `admin` / `admin`)
