@@ -1,6 +1,6 @@
 package com.epam.gym.report.health;
 
-import com.epam.gym.report.repository.TrainerWorkloadRepository;
+import com.epam.gym.report.repository.TrainerSummaryRepository;
 import org.springframework.boot.actuate.health.Health;
 import org.springframework.boot.actuate.health.HealthIndicator;
 import org.springframework.stereotype.Component;
@@ -8,9 +8,9 @@ import org.springframework.stereotype.Component;
 @Component
 public class WorkloadStorageHealthIndicator implements HealthIndicator {
 
-    private final TrainerWorkloadRepository repository;
+    private final TrainerSummaryRepository repository;
 
-    public WorkloadStorageHealthIndicator(TrainerWorkloadRepository repository) {
+    public WorkloadStorageHealthIndicator(TrainerSummaryRepository repository) {
         this.repository = repository;
     }
 

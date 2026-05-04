@@ -5,12 +5,14 @@ import com.epam.gym.report.dto.ActionType;
 import com.epam.gym.report.dto.WorkloadRequest;
 import com.epam.gym.report.dto.WorkloadSummaryResponse;
 import com.epam.gym.report.mapper.WorkloadMapper;
-import com.epam.gym.report.model.TrainerWorkload;
-import com.epam.gym.report.model.TrainingMonth;
-import com.epam.gym.report.model.TrainingYear;
-import com.epam.gym.report.repository.TrainerWorkloadRepository;
+import com.epam.gym.report.model.TrainerSummary;
+import com.epam.gym.report.model.TrainerSummary.MonthSummary;
+import com.epam.gym.report.model.TrainerSummary.YearSummary;
+import com.epam.gym.report.repository.TrainerSummaryRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.NoSuchElementException;
 
@@ -18,88 +20,92 @@ import java.util.NoSuchElementException;
 @Service
 public class ReportService {
 
-    private final TrainerWorkloadRepository repository;
+    private static final Logger log = LoggerFactory.getLogger(ReportService.class);
+
+    private final TrainerSummaryRepository repository;
     private final WorkloadMapper workloadMapper;
 
-    public ReportService(TrainerWorkloadRepository repository, WorkloadMapper workloadMapper) {
+    public ReportService(TrainerSummaryRepository repository, WorkloadMapper workloadMapper) {
         this.repository = repository;
         this.workloadMapper = workloadMapper;
     }
 
-    /**
-     * Processes ADD/DELETE training events from gym-core.
-     * For ADD: adds the duration to the trainer's monthly total.
-     * For DELETE: subtracts it (floor at 0 to guard against out-of-order events).
-     */
-    @Transactional
+    // Transaction-level log: one INFO per business operation
     public void processWorkload(WorkloadRequest request) {
-        TrainerWorkload workload = repository
-                .findByUsername(request.getTrainerUsername())
-                .orElseGet(() -> buildNewWorkload(request));
+        String txId = MDC.get("transactionId");
+        log.info("[txId={}] processWorkload START action={} trainer={}",
+                txId, request.getActionType(), request.getTrainerUsername());
 
-        // Sync name and status if they updated in gym-core
-        workload.setFirstName(request.getFirstName());
-        workload.setLastName(request.getLastName());
-        workload.setActive(request.isActive());
+        TrainerSummary summary = repository.findByUsername(request.getTrainerUsername())
+                .orElseGet(() -> createNewSummary(request, txId));
+
+        summary.setFirstName(request.getFirstName());
+        summary.setLastName(request.getLastName());
+        summary.setActive(request.isActive());
 
         int year  = request.getTrainingDate().getYear();
         int month = request.getTrainingDate().getMonthValue();
 
-        TrainingYear yearEntry = workload.getYears().stream()
-                .filter(y -> y.getYear() == year)
-                .findFirst()
-                .orElseGet(() -> addYear(workload, year));
+        YearSummary yearSummary = findOrCreateYear(summary, year, txId);
+        MonthSummary monthSummary = findOrCreateMonth(yearSummary, month, txId);
 
-        TrainingMonth monthEntry = yearEntry.getMonths().stream()
-                .filter(m -> m.getMonth() == month)
-                .findFirst()
-                .orElseGet(() -> addMonth(yearEntry, month));
+        // Operation-level log: duration delta before persistence
+        int prev  = monthSummary.getTotalDurationMinutes();
+        int delta = request.getActionType() == ActionType.ADD
+                ? request.getTrainingDurationMinutes()
+                : -request.getTrainingDurationMinutes();
+        int updated = Math.max(0, prev + delta);
+        log.debug("[txId={}] duration update: year={} month={} prev={} delta={} next={}",
+                txId, year, month, prev, delta, updated);
 
-        if (request.getActionType() == ActionType.ADD) {
-            monthEntry.setTotalDurationMinutes(
-                    monthEntry.getTotalDurationMinutes() + request.getTrainingDurationMinutes());
-        } else {
-            int updated = monthEntry.getTotalDurationMinutes() - request.getTrainingDurationMinutes();
-            monthEntry.setTotalDurationMinutes(Math.max(0, updated));
-        }
+        monthSummary.setTotalDurationMinutes(updated);
+        repository.save(summary);
 
-        repository.save(workload);
+        log.info("[txId={}] processWorkload END trainer={} year={} month={} duration={}",
+                txId, request.getTrainerUsername(), year, month, updated);
     }
 
-    // Returns full workload summary for trainer
-    @Transactional(readOnly = true)
+    // Transaction-level log: one INFO per read operation
     public WorkloadSummaryResponse getSummary(String username) {
-        TrainerWorkload workload = repository.findByUsername(username)
+        log.info("[txId={}] getSummary username={}", MDC.get("transactionId"), username);
+        TrainerSummary summary = repository.findByUsername(username)
                 .orElseThrow(() -> new NoSuchElementException("No workload data for trainer: " + username));
-        return workloadMapper.toResponse(workload);
+        return workloadMapper.toResponse(summary);
     }
 
     // Helpers
 
-    private TrainerWorkload buildNewWorkload(WorkloadRequest request) {
-        TrainerWorkload w = new TrainerWorkload();
-        w.setUsername(request.getTrainerUsername());
-        w.setFirstName(request.getFirstName());
-        w.setLastName(request.getLastName());
-        w.setActive(request.isActive());
-        return w;
+    private TrainerSummary createNewSummary(WorkloadRequest request, String txId) {
+        log.debug("[txId={}] No existing record for trainer={}, creating new document", txId, request.getTrainerUsername());
+        TrainerSummary s = new TrainerSummary();
+        s.setUsername(request.getTrainerUsername());
+        s.setFirstName(request.getFirstName());
+        s.setLastName(request.getLastName());
+        s.setActive(request.isActive());
+        return s;
     }
 
-    private TrainingYear addYear(TrainerWorkload workload, int year) {
-        TrainingYear y = new TrainingYear();
-        y.setYear(year);
-        y.setWorkload(workload);
-        workload.getYears().add(y);
-        return y;
+    private YearSummary findOrCreateYear(TrainerSummary summary, int year, String txId) {
+        return summary.getYears().stream()
+                .filter(y -> y.getYear() == year)
+                .findFirst()
+                .orElseGet(() -> {
+                    log.debug("[txId={}] Creating year entry year={}", txId, year);
+                    YearSummary y = new YearSummary(year);
+                    summary.getYears().add(y);
+                    return y;
+                });
     }
 
-    private TrainingMonth addMonth(TrainingYear yearEntry, int month) {
-        TrainingMonth m = new TrainingMonth();
-        m.setMonth(month);
-        m.setTotalDurationMinutes(0);
-        m.setTrainingYear(yearEntry);
-        yearEntry.getMonths().add(m);
-        return m;
+    private MonthSummary findOrCreateMonth(YearSummary yearSummary, int month, String txId) {
+        return yearSummary.getMonths().stream()
+                .filter(m -> m.getMonth() == month)
+                .findFirst()
+                .orElseGet(() -> {
+                    log.debug("[txId={}] Creating month entry month={}", txId, month);
+                    MonthSummary m = new MonthSummary(month);
+                    yearSummary.getMonths().add(m);
+                    return m;
+                });
     }
-
 }

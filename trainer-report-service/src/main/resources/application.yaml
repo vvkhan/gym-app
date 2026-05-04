@@ -4,20 +4,11 @@ server:
 spring:
   application:
     name: trainer-report-service
-  datasource:
-    url: jdbc:h2:mem:reportdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE;DATABASE_TO_UPPER=FALSE;NON_KEYWORDS=YEAR,MONTH
-    driver-class-name: org.h2.Driver
-    username: sa
-    password:
-  jpa:
-    hibernate:
-      ddl-auto: create-drop
-    show-sql: false
-  h2:
-    console:
-      enabled: true  # H2 browser console available at /h2-console for debugging
-      settings:
-        web-allow-others: true  # Required when running in Docker — browser connects from outside the container
+  data:
+    mongodb:
+      uri: ${MONGODB_URI:mongodb://localhost:27017/trainer_report}
+      database: trainer_report
+      auto-index-creation: true
   activemq:
     broker-url: tcp://localhost:61616
     user: activemq

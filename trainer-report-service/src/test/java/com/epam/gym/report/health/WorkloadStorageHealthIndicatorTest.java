@@ -1,6 +1,6 @@
 package com.epam.gym.report.health;
 
-import com.epam.gym.report.repository.TrainerWorkloadRepository;
+import com.epam.gym.report.repository.TrainerSummaryRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -16,7 +16,7 @@ import static org.mockito.Mockito.when;
 class WorkloadStorageHealthIndicatorTest {
 
     @Mock
-    TrainerWorkloadRepository repository;
+    TrainerSummaryRepository repository;
 
     @InjectMocks
     WorkloadStorageHealthIndicator indicator;
@@ -33,10 +33,11 @@ class WorkloadStorageHealthIndicatorTest {
 
     @Test
     void health_returnsDownWhenStorageUnavailable() {
-        when(repository.count()).thenThrow(new RuntimeException("H2 unavailable"));
+        when(repository.count()).thenThrow(new RuntimeException("MongoDB unavailable"));
 
         Health health = indicator.health();
 
         assertThat(health.getStatus()).isEqualTo(Status.DOWN);
+        assertThat(health.getDetails().get("reason").toString()).contains("MongoDB unavailable");
     }
 }

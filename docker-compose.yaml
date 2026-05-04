@@ -16,6 +16,21 @@ services:
       timeout: 5s
       retries: 5
 
+  mongodb:
+    image: mongo:7.0
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_DATABASE: trainer_report
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
   activemq:
     image: apache/activemq-classic:5.18.3
     ports:
@@ -103,6 +118,7 @@ services:
     ports:
       - "8081:8081"
     environment:
+      MONGODB_URI: mongodb://mongodb:27017/trainer_report
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
       SPRING_ACTIVEMQ_BROKER_URL: tcp://activemq:61616
       SPRING_ACTIVEMQ_USER: activemq
@@ -110,6 +126,8 @@ services:
       # Must match APP_AUTH_ISSUER_URI set in auth-service so JWT 'iss' claim validates correctly
       SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: http://auth-service:9000
     depends_on:
+      mongodb:
+        condition: service_healthy
       eureka-server:
         condition: service_healthy
       auth-service:
@@ -125,3 +143,4 @@ services:
 
 volumes:
   postgres_data:
+  mongo_data:

@@ -23,8 +23,9 @@
 
         <dependency>
             <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-data-jpa</artifactId>
+            <artifactId>spring-boot-starter-data-mongodb</artifactId>
         </dependency>
+
 
         <!-- Resource Server starter — validates incoming Bearer JWTs by fetching
             the public key from auth-service's /oauth2/jwks endpoint at startup -->
@@ -53,12 +54,6 @@
             <artifactId>micrometer-registry-prometheus</artifactId>
         </dependency>
 
-        <!-- In-memory H2 DB (data is lost on restart) -->
-        <dependency>
-            <groupId>com.h2database</groupId>
-            <artifactId>h2</artifactId>
-            <scope>runtime</scope>
-        </dependency>
 
         <!-- Eureka client — registers service under name trainer-report-service -->
         <dependency>

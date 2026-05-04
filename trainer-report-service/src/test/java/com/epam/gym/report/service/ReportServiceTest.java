@@ -3,10 +3,10 @@ package com.epam.gym.report.service;
 import com.epam.gym.report.dto.ActionType;
 import com.epam.gym.report.dto.WorkloadRequest;
 import com.epam.gym.report.mapper.WorkloadMapper;
-import com.epam.gym.report.model.TrainerWorkload;
-import com.epam.gym.report.model.TrainingMonth;
-import com.epam.gym.report.model.TrainingYear;
-import com.epam.gym.report.repository.TrainerWorkloadRepository;
+import com.epam.gym.report.model.TrainerSummary;
+import com.epam.gym.report.model.TrainerSummary.MonthSummary;
+import com.epam.gym.report.model.TrainerSummary.YearSummary;
+import com.epam.gym.report.repository.TrainerSummaryRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -28,7 +28,7 @@ import static org.mockito.Mockito.when;
 class ReportServiceTest {
 
     @Mock
-    TrainerWorkloadRepository repository;
+    TrainerSummaryRepository repository;
 
     @Mock
     WorkloadMapper workloadMapper;
@@ -37,39 +37,95 @@ class ReportServiceTest {
     ReportService service;
 
     @Test
-    void processWorkload_addCreatesWorkloadAndAccumulatesDuration() {
+    void processWorkload_addCreatesDocumentAndAccumulatesDuration() {
         when(repository.findByUsername("john.doe")).thenReturn(Optional.empty());
         when(repository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         service.processWorkload(request(ActionType.ADD, 60));
 
-        ArgumentCaptor<TrainerWorkload> captor = ArgumentCaptor.forClass(TrainerWorkload.class);
+        ArgumentCaptor<TrainerSummary> captor = ArgumentCaptor.forClass(TrainerSummary.class);
         verify(repository).save(captor.capture());
-        TrainerWorkload saved = captor.getValue();
+        TrainerSummary saved = captor.getValue();
         assertThat(saved.getUsername()).isEqualTo("john.doe");
         assertThat(saved.getYears()).hasSize(1);
         assertThat(saved.getYears().get(0).getMonths().get(0).getTotalDurationMinutes()).isEqualTo(60);
     }
 
     @Test
-    void processWorkload_deleteSubtractsDurationAndFloorsAtZero() {
-        // Existing record has 30 minutes; deleting 60 must not go below 0
-        TrainerWorkload existing = existingWorkload(2024, 3, 30);
+    void processWorkload_addAccumulatesDurationOnExistingMonth() {
+        TrainerSummary existing = existingSummary(2024, 3, 30);
+        when(repository.findByUsername("john.doe")).thenReturn(Optional.of(existing));
+        when(repository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        service.processWorkload(request(ActionType.ADD, 45));
+
+        int result = existing.getYears().get(0).getMonths().get(0).getTotalDurationMinutes();
+        assertThat(result).isEqualTo(75);
+    }
+
+    @Test
+    void processWorkload_addCreatesNewMonthWhenYearExists() {
+        TrainerSummary existing = existingSummary(2024, 1, 60);
+        when(repository.findByUsername("john.doe")).thenReturn(Optional.of(existing));
+        when(repository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        // Request for March — different month than existing January entry
+        WorkloadRequest req = request(ActionType.ADD, 30);
+        req.setTrainingDate(LocalDate.of(2024, 3, 10));
+        service.processWorkload(req);
+
+        YearSummary year = existing.getYears().get(0);
+        assertThat(year.getMonths()).hasSize(2);
+    }
+
+    @Test
+    void processWorkload_deleteSubtractsDuration() {
+        TrainerSummary existing = existingSummary(2024, 3, 90);
+        when(repository.findByUsername("john.doe")).thenReturn(Optional.of(existing));
+        when(repository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        service.processWorkload(request(ActionType.DELETE, 40));
+
+        int result = existing.getYears().get(0).getMonths().get(0).getTotalDurationMinutes();
+        assertThat(result).isEqualTo(50);
+    }
+
+    @Test
+    void processWorkload_deleteFloorsAtZeroOnOverflow() {
+        // Existing has 30 min; deleting 60 must not produce a negative value
+        TrainerSummary existing = existingSummary(2024, 3, 30);
         when(repository.findByUsername("john.doe")).thenReturn(Optional.of(existing));
         when(repository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         service.processWorkload(request(ActionType.DELETE, 60));
 
-        int remaining = existing.getYears().get(0).getMonths().get(0).getTotalDurationMinutes();
-        assertThat(remaining).isEqualTo(0);
+        int result = existing.getYears().get(0).getMonths().get(0).getTotalDurationMinutes();
+        assertThat(result).isEqualTo(0);
     }
 
     @Test
-    void getSummary_throwsWhenTrainerHasNoWorkload() {
+    void processWorkload_syncesProfileFieldsOnExistingDocument() {
+        TrainerSummary existing = existingSummary(2024, 3, 0);
+        existing.setFirstName("OldFirst");
+        existing.setLastName("OldLast");
+        existing.setActive(false);
+        when(repository.findByUsername("john.doe")).thenReturn(Optional.of(existing));
+        when(repository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        service.processWorkload(request(ActionType.ADD, 30));
+
+        assertThat(existing.getFirstName()).isEqualTo("John");
+        assertThat(existing.getLastName()).isEqualTo("Doe");
+        assertThat(existing.isActive()).isTrue();
+    }
+
+    @Test
+    void getSummary_throwsWhenTrainerHasNoDocument() {
         when(repository.findByUsername("unknown")).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.getSummary("unknown"))
-                .isInstanceOf(NoSuchElementException.class);
+                .isInstanceOf(NoSuchElementException.class)
+                .hasMessageContaining("unknown");
     }
 
     // Helpers
@@ -86,20 +142,19 @@ class ReportServiceTest {
         return r;
     }
 
-    private TrainerWorkload existingWorkload(int year, int month, int duration) {
-        TrainingMonth m = new TrainingMonth();
-        m.setMonth(month);
+    private TrainerSummary existingSummary(int year, int month, int duration) {
+        MonthSummary m = new MonthSummary(month);
         m.setTotalDurationMinutes(duration);
 
-        TrainingYear y = new TrainingYear();
-        y.setYear(year);
+        YearSummary y = new YearSummary(year);
         y.getMonths().add(m);
-        m.setTrainingYear(y);
 
-        TrainerWorkload w = new TrainerWorkload();
-        w.setUsername("john.doe");
-        w.getYears().add(y);
-        y.setWorkload(w);
-        return w;
+        TrainerSummary s = new TrainerSummary();
+        s.setUsername("john.doe");
+        s.setFirstName("John");
+        s.setLastName("Doe");
+        s.setActive(true);
+        s.getYears().add(y);
+        return s;
     }
 }
