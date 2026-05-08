@@ -1,10 +1,8 @@
 # Gym Application
 
-## Microservices
-
 ### Notes
 
-**Unit Tests:**
+**Unit Tests Coverage:**
 
 `Jacoco` is utilized for evaluating test coverage.
 
@@ -102,3 +100,33 @@ To view all metrics, open the URL in a browser
 
 The application exposes a health endpoint at `http://localhost:8080/actuator/health` and `http://localhost:8081/actuator/health`.
 
+---
+
+**RUNNING COMPONENT AND INTEGRATUON TESTS:**
+
+*All tests in the project:*
+```
+mvn test -pl gym-core,trainer-report-service -Dtest="CucumberComponentSuiteRunner,CucumberIntegrationSuiteRunner"
+```
+
+*All tests for one service (drop either runner to limit to component or integration only):*
+```
+mvn test -pl gym-core -Dtest="CucumberComponentSuiteRunner,CucumberIntegrationSuiteRunner"
+mvn test -pl trainer-report-service -Dtest="CucumberComponentSuiteRunner,CucumberIntegrationSuiteRunner"
+```
+
+*One feature file — always pair `-Dcucumber.features` with `-Dcucumber.glue` to avoid a duplicate `@CucumberContextConfiguration` error:*
+```
+# component feature
+mvn test -pl gym-core -Dtest="CucumberComponentSuiteRunner" -Dcucumber.features="classpath:features/component/trainee_service.feature" -Dcucumber.glue="com.epam.gym.core.component"
+
+# integration feature
+mvn test -pl gym-core -Dtest="CucumberIntegrationSuiteRunner" -Dcucumber.features="classpath:features/integration/trainee_controller.feature" -Dcucumber.glue="com.epam.gym.core.integration"
+```
+
+Glue paths: `com.epam.gym.core.component`, `com.epam.gym.core.integration`, `com.epam.gym.report.component`, `com.epam.gym.report.integration`.
+
+*One scenario — filter by name. Other scenarios are reported as Skipped, which is expected:*
+```
+mvn test -pl gym-core -Dtest="CucumberComponentSuiteRunner" -Dcucumber.glue="com.epam.gym.core.component" -Dcucumber.filter.name="Registering a trainee generates a username and a raw password"
+```
