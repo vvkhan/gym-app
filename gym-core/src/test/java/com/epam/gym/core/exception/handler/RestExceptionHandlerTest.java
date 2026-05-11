@@ -2,6 +2,7 @@ package com.epam.gym.core.exception.handler;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.core.MethodParameter;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
@@ -11,6 +12,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.servlet.NoHandlerFoundException;
 
+import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -85,14 +87,15 @@ class RestExceptionHandlerTest {
     }
 
     @Test
-    void handleValidation_returns400WithFieldErrors() {
-        MethodArgumentNotValidException ex = mock(MethodArgumentNotValidException.class);
+    void handleValidation_returns400WithFieldErrors() throws NoSuchMethodException {
         BindingResult bindingResult = mock(BindingResult.class);
-        when(ex.getBindingResult()).thenReturn(bindingResult);
         when(bindingResult.getFieldErrors()).thenReturn(List.of(
                 new FieldError("obj", "firstName", "must not be blank"),
                 new FieldError("obj", "lastName", "must not be blank")
         ));
+        Method method = Object.class.getMethod("toString");
+        MethodArgumentNotValidException ex =
+                new MethodArgumentNotValidException(new MethodParameter(method, -1), bindingResult);
 
         ResponseEntity<Map<String, Object>> response = handler.handleValidation(ex);
 
