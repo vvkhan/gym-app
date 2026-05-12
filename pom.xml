@@ -30,6 +30,8 @@
         <spring-cloud.version>2023.0.3</spring-cloud.version>
         <lombok.version>1.18.30</lombok.version>
         <mapstruct.version>1.5.5.Final</mapstruct.version>
+        <cucumber.version>7.18.0</cucumber.version>
+        <testcontainers.version>1.19.8</testcontainers.version>
 
         <!-- Plugin versions -->
         <maven-compiler-plugin.version>3.12.1</maven-compiler-plugin.version>
@@ -59,6 +61,24 @@
                 <groupId>org.mapstruct</groupId>
                 <artifactId>mapstruct</artifactId>
                 <version>${mapstruct.version}</version>
+            </dependency>
+
+            <!-- Cucumber BOM — manages cucumber-java, cucumber-spring, etc. -->
+            <dependency>
+                <groupId>io.cucumber</groupId>
+                <artifactId>cucumber-bom</artifactId>
+                <version>${cucumber.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
+            <!-- Testcontainers BOM — manages postgresql, junit-jupiter, etc. -->
+            <dependency>
+                <groupId>org.testcontainers</groupId>
+                <artifactId>testcontainers-bom</artifactId>
+                <version>${testcontainers.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
             </dependency>
         </dependencies>
     </dependencyManagement>
