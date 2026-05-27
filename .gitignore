@@ -50,3 +50,4 @@ logs/
 *.war
 *.ear
 hs_err_pid*
+.env
