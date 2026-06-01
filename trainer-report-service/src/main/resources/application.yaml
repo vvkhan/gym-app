@@ -20,7 +20,7 @@ spring:
           # Spring Security reads /.well-known/openid-configuration from this URI at startup,
           # discovers the jwks_uri, fetches the RSA public key, and validates all incoming JWTs locally.
           # Must match app.auth.issuer-uri in auth-service application.yaml.
-          issuer-uri: http://localhost:9000
+          jwk-set-uri: http://localhost:9000/oauth2/jwks
 
 eureka:
   client:

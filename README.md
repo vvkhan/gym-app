@@ -130,3 +130,36 @@ Glue paths: `com.epam.gym.core.component`, `com.epam.gym.core.integration`, `com
 ```
 mvn test -pl gym-core -Dtest="CucumberComponentSuiteRunner" -Dcucumber.glue="com.epam.gym.core.component" -Dcucumber.filter.name="Registering a trainee generates a username and a raw password"
 ```
+
+### Docker Part
+
+#### Subtask 1 
+
+Build:
+- `docker build -t gym-core:latest -f gym-core/Dockerfile .`
+- `docker build -t trainer-report:latest -f trainer-report-service/Dockerfile .`
+- `docker build -t eureka-server:latest -f eureka-server/Dockerfile .`
+
+Run with disabled integration: `docker compose up -d`
+
+Check: `docker ps`
+
+#### Subtask 2
+
+Run with enabled integration: `docker compose -f docker-compose.yaml -f docker-compose.integrations.yaml up -d --wait`
+
+Check: `docker ps`
+
+#### Subtask 3
+
+Shell access:
+- `docker exec -it gym-app-gym-core-1 /bin/bash`
+- `docker exec -it gym-app-trainer-report-service-1 /bin/bash`
+- `docker exec -it gym-app-eureka-server-1 /bin/bash`
+
+Logs:
+- `docker compose logs -f gym-core`
+- `docker compose logs -f trainer-report-service`
+- `docker compose logs -f` (all services at once)
+
+Stop and clean: `docker compose -f docker-compose.yaml -f docker-compose.integrations.yaml down`

@@ -1,0 +1,63 @@
+services:
+
+  activemq:
+    image: apache/activemq-classic:5.18.3
+    ports:
+      - "61616:61616"   # JMS / OpenWire
+      - "8161:8161"     # Web console (admin/admin by default)
+    environment:
+      ACTIVEMQ_CONNECTION_USER: activemq
+      ACTIVEMQ_CONNECTION_PASSWORD: activemq
+    volumes:
+      - ./activemq/activemq.xml:/opt/apache-activemq/conf/activemq.xml
+    networks:
+      - gym-network
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'echo > /dev/tcp/localhost/61616' 2>/dev/null"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  eureka-server:
+    build:
+      context: .
+      dockerfile: eureka-server/Dockerfile
+    ports:
+      - "8761:8761"
+    networks:
+      - gym-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8761/ || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "3"
+
+  gym-core:
+    environment:
+      SPRING_PROFILES_ACTIVE: default
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+      activemq:
+        condition: service_healthy
+
+  trainer-report-service:
+    environment:
+      SPRING_PROFILES_ACTIVE: default
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+      activemq:
+        condition: service_healthy
+
+networks:
+  gym-network:
+    driver: bridge
+    name: gym-network
